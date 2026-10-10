@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskMaster Pro - Cloud-Native Todo Application</title>
+    <meta name="description" content="Quản lý công việc thông minh với TaskMaster Pro. Tích hợp FastAPI, PostgreSQL, JWT Authentication và kiến trúc Microservices.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Gradient Glows -->
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    <div class="bg-glow glow-3"></div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- App Container -->
+    <div class="app-layout">
+        
+        <!-- Navigation / Header -->
+        <header class="app-navbar glass-card">
+            <div class="brand">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>TaskMaster <span>Pro</span></h1>
+                    <span class="brand-badge">Cloud-Ready</span>
+                </div>
+            </div>
+
+            <!-- Backend Health & Connection Status -->
+            <div class="server-status" id="server-status-badge" title="Kiểm tra trạng thái kết nối Backend">
+                <span class="status-dot" id="status-dot"></span>
+                <span class="status-text" id="status-text">Đang kết nối...</span>
+            </div>
+
+            <!-- User Profile & Actions (Visible when logged in) -->
+            <div class="nav-user-panel" id="nav-user-panel" style="display: none;">
+                <div class="user-info">
+                    <div class="avatar" id="user-avatar">U</div>
+                    <div class="user-meta">
+                        <span class="user-name" id="nav-username">User</span>
+                        <span class="user-email" id="nav-email">user@example.com</span>
+                    </div>
+                </div>
+                <button id="btn-logout" class="btn btn-secondary btn-sm" title="Đăng xuất khỏi hệ thống">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Đăng xuất</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- ================= AUTH VIEW (Login / Register) ================= -->
+            <section id="auth-section" class="auth-section">
+                <div class="auth-card glass-card">
+                    <!-- Auth Switcher Tabs -->
+                    <div class="auth-tabs">
+                        <button id="tab-login" class="auth-tab active" type="button">Đăng Nhập</button>
+                        <button id="tab-register" class="auth-tab" type="button">Đăng Ký Tài Khoản</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="form-login" class="auth-form" novalidate>
+                        <div class="form-header">
+                            <h2>Chào mừng trở lại! 👋</h2>
+                            <p>Đăng nhập để quản lý công việc và đồng bộ dữ liệu thời gian thực.</p>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="login-email">Địa chỉ Email</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                <input type="email" id="login-email" placeholder="tenban@domain.com" required autocomplete="email">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="login-password">Mật khẩu</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block">
+                            <span>Đăng Nhập</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="form-register" class="auth-form" style="display: none;" novalidate>
+                        <div class="form-header">
+                            <h2>Tạo tài khoản mới 🚀</h2>
+                            <p>Khởi tạo tài khoản chỉ trong vài giây để bắt đầu tối ưu năng suất.</p>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="register-username">Tên người dùng (Username)</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                <input type="text" id="register-username" placeholder="nguyenvan_a" required autocomplete="username">
+                            </div>
+                            <span class="field-hint">Tối thiểu 3 ký tự (chữ cái, số, gạch ngang, chấm)</span>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="register-email">Địa chỉ Email</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                <input type="email" id="register-email" placeholder="tenban@domain.com" required autocomplete="email">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="register-password">Mật khẩu</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <input type="password" id="register-password" placeholder="Tối thiểu 6 ký tự" required autocomplete="new-password">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-register" class="btn btn-primary btn-block">
+                            <span>Đăng Ký Ngay</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ================= DASHBOARD VIEW (Todo Manager) ================= -->
+            <section id="dashboard-section" class="dashboard-section" style="display: none;">
+                
+                <!-- Quick Stats Cards Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon stat-total">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Tổng công việc</span>
+                            <h3 id="stat-total-count" class="stat-value">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon stat-pending">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Đang thực hiện</span>
+                            <h3 id="stat-pending-count" class="stat-value">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon stat-completed">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Đã hoàn thành</span>
+                            <h3 id="stat-completed-count" class="stat-value">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-card">
+                        <div class="stat-progress-box">
+                            <div class="progress-labels">
+                                <span class="stat-label">Tiến độ tổng</span>
+                                <span id="stat-progress-text" class="progress-pct">0%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="stat-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create New Todo Card -->
+                <div class="create-todo-card glass-card">
+                    <form id="form-create-todo" class="create-todo-form">
+                        <div class="form-row">
+                            <div class="input-wrapper flex-grow">
+                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <input type="text" id="input-todo-title" placeholder="Thêm tiêu đề công việc mới..." required autocomplete="off">
+                            </div>
+                            <button type="submit" id="btn-add-todo" class="btn btn-primary">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>Thêm việc</span>
+                            </button>
+                        </div>
+                        <div class="form-row optional-row">
+                            <input type="text" id="input-todo-description" placeholder="Mô tả chi tiết (tùy chọn)..." autocomplete="off">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Toolbar: Filter Tabs & Search Bar -->
+                <div class="todo-toolbar glass-card">
+                    <div class="filter-tabs" role="tablist">
+                        <button id="filter-all" class="filter-tab active" data-filter="all">Tất cả (<span id="count-all">0</span>)</button>
+                        <button id="filter-active" class="filter-tab" data-filter="active">Đang làm (<span id="count-active">0</span>)</button>
+                        <button id="filter-completed" class="filter-tab" data-filter="completed">Đã xong (<span id="count-completed">0</span>)</button>
+                    </div>
+
+                    <div class="search-box">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="input-search-todo" placeholder="Tìm kiếm theo tiêu đề/mô tả...">
+                        <button id="btn-clear-search" class="btn-icon" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                    </div>
+                </div>
+
+                <!-- Todo Items Container -->
+                <div id="todo-list" class="todo-list">
+                    <!-- Dynamic Todo Cards will be injected here via JavaScript -->
+                </div>
+
+                <!-- Empty State Placeholder (when no todos) -->
+                <div id="empty-state" class="empty-state glass-card" style="display: none;">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3 id="empty-title">Chưa có công việc nào</h3>
+                    <p id="empty-desc">Hãy thêm công việc đầu tiên ở ô bên trên để bắt đầu ngày làm việc hiệu quả!</p>
+                </div>
+
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>TaskMaster Pro &bull; Cloud Microservices Architecture &bull; FastAPI + PostgreSQL</p>
+        </footer>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Edit Todo Modal Dialog -->
+    <dialog id="modal-edit-todo" class="app-dialog">
+        <div class="dialog-content glass-card">
+            <div class="dialog-header">
+                <h3>Chỉnh sửa công việc</h3>
+                <button id="btn-close-edit-modal" class="btn-icon" title="Đóng modal">✕</button>
+            </div>
+            <form id="form-edit-todo" class="dialog-form">
+                <input type="hidden" id="edit-todo-id">
+                
+                <div class="input-group">
+                    <label for="edit-todo-title">Tiêu đề công việc</label>
+                    <input type="text" id="edit-todo-title" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="edit-todo-description">Mô tả chi tiết</label>
+                    <textarea id="edit-todo-description" rows="3" placeholder="Nhập thêm chi tiết cho công việc..."></textarea>
+                </div>
+
+                <div class="input-group-checkbox">
+                    <label class="custom-checkbox-label">
+                        <input type="checkbox" id="edit-todo-completed">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Đánh dấu đã hoàn thành</span>
+                    </label>
+                </div>
+
+                <div class="dialog-actions">
+                    <button type="button" id="btn-cancel-edit" class="btn btn-secondary">Hủy bỏ</button>
+                    <button type="submit" id="btn-save-edit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Delete Confirmation Modal Dialog -->
+    <dialog id="modal-delete-todo" class="app-dialog">
+        <div class="dialog-content glass-card">
+            <div class="dialog-header">
+                <h3 class="danger-title">Xác nhận xóa công việc</h3>
+                <button id="btn-close-delete-modal" class="btn-icon" title="Đóng modal">✕</button>
+            </div>
+            <div class="dialog-body">
+                <p>Bạn có chắc chắn muốn xóa vĩnh viễn công việc này không? Thao tác này không thể hoàn tác.</p>
+                <div class="delete-target-preview" id="delete-target-title">"Tiêu đề công việc"</div>
+            </div>
+            <div class="dialog-actions">
+                <button type="button" id="btn-cancel-delete" class="btn btn-secondary">Giữ lại</button>
+                <button type="button" id="btn-confirm-delete" class="btn btn-danger">Xóa vĩnh viễn</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
