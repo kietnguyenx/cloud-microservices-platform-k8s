@@ -43,12 +43,21 @@ app.include_router(_auth.router, prefix="/api", include_in_schema=False)
 app.include_router(_todo.router, prefix="/api", include_in_schema=False)
 
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Mount Frontend UI at /app
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+if os.path.isdir(frontend_dir):
+    app.mount("/app", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
 # --- Root & Kubernetes Probe Endpoints ---
 
 @app.get("/", tags=["General"])
 def root():
     return {
         "message": "Welcome to Todo API",
+        "frontend": "/app",
         "docs": "/docs",
         "health": "/healthz",
         "readiness": "/readyz"
