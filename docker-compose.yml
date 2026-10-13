@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # 1. Cơ sở dữ liệu PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: todo-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: todo_user
+      POSTGRES_PASSWORD: todo_password
+      POSTGRES_DB: todo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - todo_network
+
+  # 2. Hàng đợi tin nhắn Redis
+  redis:
+    image: redis:alpine
+    container_name: todo-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - todo_network
+
+  # 3. Dịch vụ Backend (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://todo_user:todo_password@postgres:5432/todo_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: supersecretjwtkeychangeinproduction
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - todo_network
+
+  # 4. Dịch vụ xử lý nền (Worker Service)
+  worker:
+    build:
+      context: ./worker-service
+      dockerfile: Dockerfile
+    container_name: todo-worker
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://todo_user:todo_password@postgres:5432/todo_db
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - todo_network
+
+  # 5. Dịch vụ Giao diện người dùng (Frontend Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todo-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - todo_network
+
+# Lưu trữ dữ liệu bền vững (Persistent Volume)
+volumes:
+  postgres_data:
+    driver: local
+
+# Mạng nội bộ kết nối các container
+networks:
+  todo_network:
+    driver: bridge
