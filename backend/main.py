@@ -1,20 +1,23 @@
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, status, Response
+
+from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from utils._config import settings
-from services._database import get_db, init_db, engine
 from routes import _auth, _todo
+from services._database import engine, get_db, init_db
+from utils._config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize tables if PostgreSQL is connected
+    # Startup: Khởi tạo database/tables nếu chưa tồn tại
     init_db()
     yield
-    # Shutdown: Cleanly dispose of SQLAlchemy connection pool
+    # Shutdown: Thu dọn sạch connection pool tránh rò rỉ kết nối
     engine.dispose()
 
 
@@ -24,10 +27,10 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
-# Configure CORS Middleware dynamically from environment
+# Cấu hình CORS Middleware động từ settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins if "*" not in settings.cors_origins else ["*"],
@@ -36,20 +39,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers (Support both standard routes and /api prefix)
+# Đăng ký Routers (hỗ trợ cả route gốc và prefix /api)
 app.include_router(_auth.router)
 app.include_router(_todo.router)
 app.include_router(_auth.router, prefix="/api", include_in_schema=False)
 app.include_router(_todo.router, prefix="/api", include_in_schema=False)
 
-
-import os
-from fastapi.staticfiles import StaticFiles
-
-# Mount Frontend UI at /app
+# Mount Frontend UI tại /app (nếu thư mục tồn tại)
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 if os.path.isdir(frontend_dir):
     app.mount("/app", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
 
 # --- Root & Kubernetes Probe Endpoints ---
 
@@ -60,28 +60,28 @@ def root():
         "frontend": "/app",
         "docs": "/docs",
         "health": "/healthz",
-        "readiness": "/readyz"
+        "readiness": "/readyz",
     }
 
 
 @app.get("/healthz", tags=["Health Probes"], summary="Kubernetes Liveness Probe")
 def liveness_probe():
-    """Liveness probe: Checks if the application server is responsive."""
+    """Liveness probe: Kiểm tra tiến trình server đang phản hồi."""
     return {"status": "alive"}
 
 
 @app.get("/readyz", tags=["Health Probes"], summary="Kubernetes Readiness Probe")
 def readiness_probe(response: Response, db: Session = Depends(get_db)):
-    """Readiness probe: Checks database connectivity before routing traffic."""
+    """Readiness probe: Kiểm tra kết nối database trước khi tiếp nhận traffic."""
     try:
         db.execute(text("SELECT 1"))
         return {
             "status": "ready",
-            "database": "connected"
+            "database": "connected",
         }
     except Exception as e:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {
             "status": "not_ready",
-            "database": f"disconnected: {str(e)}"
+            "database": f"disconnected: {str(e)}",
         }

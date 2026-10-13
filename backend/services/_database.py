@@ -8,7 +8,7 @@ logger = logging.getLogger("uvicorn.error")
 
 # Database Engine Configuration
 # Supports both PostgreSQL (production/docker/cloud) and SQLite (quick local run without Docker)
-is_sqlite = settings.POSTGRES_URL.startswith("sqlite")
+is_sqlite = settings.postgres_url.startswith("sqlite")
 
 if is_sqlite:
     engine = create_engine(
@@ -75,3 +75,38 @@ def init_db():
         logger.info("Database tables verified/created successfully.")
     except Exception as e:
         logger.warning(f"Could not initialize database tables: {e}. Please ensure PostgreSQL is running.")
+
+import sqlite3
+
+DB_PATH = "todo.db"
+
+def init_user_table():
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+def get_user_by_username(username: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        return cursor.fetchone()
+
+def create_user(username: str, email: str, password_hash: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+            (username, email, password_hash),
+        )
+        conn.commit()
+        return cursor.lastrowid
