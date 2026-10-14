@@ -1,6 +1,6 @@
 /**
- * BLANC' LIVING - Luxury Minimalist Furniture Showroom App Logic
- * Tone màu & Phong cách tối giản lấy cảm hứng từ Blanc.vn
+ * MAISON' DÉCOR - Luxury Minimalist Furniture Showroom App Logic
+ * Tone màu & Phong cách tối giản phong cách Bắc Âu tối giản đương đại
  * Dữ liệu sản phẩm được đồng bộ tự động từ Backend RESTful API & Database
  */
 
@@ -247,7 +247,7 @@ function renderCart() {
             <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
                 <div style="font-size: 3rem; margin-bottom: 12px;">🛍️</div>
                 <h4 style="color: var(--text-primary); margin-bottom: 8px;">Giỏ hàng của bạn đang trống</h4>
-                <p style="font-size: 0.88rem; margin-bottom: 20px;">Hãy dạo xem các bộ sưu tập nội thất tuyệt đẹp của BLANC'.</p>
+                <p style="font-size: 0.88rem; margin-bottom: 20px;">Hãy dạo xem các bộ sưu tập nội thất tuyệt đẹp của MAISON' DÉCOR.</p>
                 <button type="button" class="btn-primary" onclick="closeCart(); document.getElementById('catalog').scrollIntoView();">Khám Phá Sản Phẩm</button>
             </div>
         `;
@@ -396,7 +396,7 @@ function handleCheckoutSubmit(e) {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
 
     const totalAmount = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const orderCode = "BLC-" + Math.floor(1000 + Math.random() * 9000);
+    const orderCode = "MSN-" + Math.floor(1000 + Math.random() * 9000);
 
     const newOrder = {
         code: orderCode,
@@ -794,7 +794,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formLogin.addEventListener("submit", (e) => {
         e.preventDefault();
         const email = document.getElementById("login-email").value.trim().toLowerCase();
-        const isAdmin = email === "admin@blanc.vn" || email === "admin";
+        const isAdmin = email === "admin@maisondecor.vn" || email === "admin@blanc.vn" || email === "admin";
         AppState.user = {
             username: isAdmin ? "admin" : email.split("@")[0],
             email: email,
@@ -815,11 +815,11 @@ document.addEventListener("DOMContentLoaded", () => {
         btnQuickAdmin.addEventListener("click", () => {
             AppState.user = {
                 username: "admin",
-                email: "admin@blanc.vn",
+                email: "admin@maisondecor.vn",
                 full_name: "Quản Trị Viên Showroom (Admin)",
                 role: "admin",
                 phone: "0987 654 321",
-                address: "Showroom Blanc Luxury"
+                address: "Showroom Maison Décor Luxury"
             };
             localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
             updateAuthDisplay();

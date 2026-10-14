@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="BLANC Style Luxury Furniture API",
+    title="MAISON' DÉCOR Luxury Furniture API",
     description="Hệ thống Backend API & Showroom Bán Đồ Nội Thất Cao Cấp",
     version="2.0.0",
     docs_url="/docs",
