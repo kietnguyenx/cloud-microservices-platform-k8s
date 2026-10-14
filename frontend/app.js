@@ -1,1249 +1,1153 @@
 /**
- * TaskFlow Studio - White & Blue ("Tone Trắng - Xanh") Application Logic
- * Kanban Project Management inspired by Asana & Trello
- * Seamlessly integrates with FastAPI Backend & provides rich offline local persistence
+ * BLANC' LIVING - Luxury Minimalist Furniture Showroom App Logic
+ * Tone màu & Phong cách tối giản lấy cảm hứng từ Blanc.vn
+ * Dữ liệu sản phẩm được đồng bộ tự động từ Backend RESTful API & Database
  */
 
-// ==========================================
-// 1. Configuration & Initial State
-// ==========================================
+// Cấu hình URL kết nối Backend API (hỗ trợ cả Live Server, Docker và K8s)
+const API_BASE = (window.location.port === "3000" || window.location.port === "5500" || window.location.protocol === "file:") 
+    ? "http://localhost:8000" 
+    : "";
 
-const API_BASE_URL = "/api";
-//  || localStorage.getItem('API_BASE_URL')
-//  || (window.location.port === "8000" ? "/api" : "http://localhost:8000");
-
-// Default sample tasks matching both reference photos (Image 1 & Image 2)
-const DEFAULT_DEMO_TASKS = []
-
-const state = {
-    token: localStorage.getItem('taskmaster_token') || null,
-    user: null,
-    tasks: [],
-    currentView: 'board', // 'board' | 'list' | 'timeline' | 'calendar' | 'progress'
-    searchQuery: '',
-    hideCompleted: false,
-    isStarred: localStorage.getItem('taskflow_starred') === 'true',
-    isServerOnline: false,
-    draggedTaskId: null,
-    deleteTargetId: null,
-    activeEditColor: 'blue',
-    activeEditCover: 'none'
+// =============================================================================
+// 1. STATE ỨNG DỤNG (GIỎ HÀNG, BỘ LỌC, TÀI KHOẢN, ĐƠN HÀNG)
+// =============================================================================
+const AppState = {
+    products: [],
+    isLoading: true,
+    currentCategory: "all",
+    searchQuery: "",
+    priceFilter: "all",
+    sortOrder: "featured",
+    cart: JSON.parse(localStorage.getItem("blanc_cart") || "[]"),
+    orders: JSON.parse(localStorage.getItem("blanc_orders") || "[]"),
+    user: JSON.parse(localStorage.getItem("blanc_user") || "null")
 };
 
-// ==========================================
-// 2. SVG Vector Art Assets (Cover Illustrations)
-// ==========================================
-
-const SVG_COVERS = {
-    // 1. Mountain Sunset (Inspired by Image 1 "Social media assets")
-    mountain: `
-        <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#eff6ff"/>
-                    <stop offset="100%" stop-color="#ffffff"/>
-                </linearGradient>
-                <linearGradient id="mount1" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#3b82f6"/>
-                    <stop offset="100%" stop-color="#1d4ed8"/>
-                </linearGradient>
-                <linearGradient id="mount2" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#2563eb"/>
-                    <stop offset="100%" stop-color="#1e40af"/>
-                </linearGradient>
-            </defs>
-            <rect width="400" height="160" fill="url(#skyGrad)"/>
-            <!-- Golden Sun -->
-            <circle cx="280" cy="65" r="28" fill="#fbbf24" opacity="0.95"/>
-            <!-- Background Mountains -->
-            <polygon points="120,160 220,55 320,160" fill="#93c5fd" opacity="0.6"/>
-            <!-- Foreground Mountains -->
-            <polygon points="40,160 160,40 280,160" fill="url(#mount1)"/>
-            <polygon points="200,160 300,70 400,160" fill="url(#mount2)"/>
-            <!-- Coral Tree -->
-            <path d="M110,140 Q100,105 110,95 Q135,80 145,105 Q145,130 110,140 Z" fill="#f43f5e"/>
-            <line x1="120" y1="140" x2="120" y2="160" stroke="#78350f" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="140" cy="120" r="14" fill="#fb7185"/>
-            <!-- Winding Road -->
-            <path d="M220,160 C240,140 270,145 290,130 C305,120 315,125 330,122" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4 2"/>
-        </svg>
-    `,
-
-    // 2. Origami Paper Airplanes (Inspired by Image 1 "Featured blog image")
-    airplane: `
-        <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="airGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f0f9ff"/>
-                    <stop offset="100%" stop-color="#eff6ff"/>
-                </linearGradient>
-            </defs>
-            <rect width="400" height="160" fill="url(#airGrad)"/>
-            <!-- Wind Trails -->
-            <path d="M40,110 Q140,80 240,95" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>
-            <path d="M70,50 Q180,30 290,55" fill="none" stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="4 3" stroke-linecap="round"/>
-            <!-- Big Blue Airplane -->
-            <g transform="translate(190, 30) rotate(-10)">
-                <polygon points="0,40 100,10 40,55" fill="#3b82f6"/>
-                <polygon points="100,10 40,55 35,42" fill="#2563eb"/>
-                <polygon points="0,40 40,55 35,42" fill="#60a5fa"/>
-            </g>
-            <!-- Coral Pink Airplane -->
-            <g transform="translate(180, 75) rotate(5) scale(0.95)">
-                <polygon points="0,40 100,10 40,55" fill="#f43f5e"/>
-                <polygon points="100,10 40,55 35,42" fill="#e11d48"/>
-                <polygon points="0,40 40,55 35,42" fill="#fb7185"/>
-            </g>
-        </svg>
-    `,
-
-    // 3. Cute 3D Emojis Banner (Inspired by Image 2 "Team Project")
-    emojis: `
-        <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="emojiBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#3b82f6"/>
-                    <stop offset="50%" stop-color="#6366f1"/>
-                    <stop offset="100%" stop-color="#8b5cf6"/>
-                </linearGradient>
-            </defs>
-            <rect width="400" height="160" fill="url(#emojiBg)"/>
-            <!-- Floating Glows -->
-            <circle cx="80" cy="50" r="16" fill="#f43f5e" opacity="0.4"/>
-            <circle cx="320" cy="110" r="20" fill="#38bdf8" opacity="0.4"/>
-            <!-- Emoji 1: Cyan Square Face -->
-            <g transform="translate(80, 50)">
-                <rect x="0" y="0" width="55" height="55" rx="14" fill="#38bdf8"/>
-                <circle cx="18" cy="22" r="3.5" fill="#0f172a"/>
-                <circle cx="37" cy="22" r="3.5" fill="#0f172a"/>
-                <path d="M20,34 Q27.5,42 35,34" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
-            </g>
-            <!-- Emoji 2: Purple Square Face -->
-            <g transform="translate(150, 42)">
-                <rect x="0" y="0" width="60" height="60" rx="16" fill="#c084fc"/>
-                <circle cx="20" cy="24" r="4" fill="#0f172a"/>
-                <circle cx="40" cy="24" r="4" fill="#0f172a"/>
-                <path d="M22,36 Q30,44 38,36" fill="none" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round"/>
-            </g>
-            <!-- Emoji 3: Pink Square Face -->
-            <g transform="translate(225, 48)">
-                <rect x="0" y="0" width="55" height="55" rx="14" fill="#fb7185"/>
-                <circle cx="18" cy="22" r="3.5" fill="#0f172a"/>
-                <circle cx="37" cy="22" r="3.5" fill="#0f172a"/>
-                <line x1="20" y1="35" x2="35" y2="35" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
-            </g>
-            <!-- Thumbs up and hearts -->
-            <g transform="translate(300, 60)">
-                <rect x="0" y="0" width="40" height="40" rx="10" fill="rgba(255,255,255,0.2)"/>
-                <text x="12" y="27" font-size="20">👍</text>
-            </g>
-            <g transform="translate(30, 70)">
-                <rect x="0" y="0" width="36" height="36" rx="8" fill="rgba(255,255,255,0.2)"/>
-                <text x="9" y="25" font-size="18">❤️</text>
-            </g>
-        </svg>
-    `
-};
-
-// ==========================================
-// 3. Helper Functions
-// ==========================================
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+// Hàm định dạng tiền tệ VNĐ (ví dụ: 16.800.000₫)
+function formatVND(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount).replace('₫', '₫');
 }
 
-function showToast(message, type = 'info', duration = 3000) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+// =============================================================================
+// 3. RENDER DANH SÁCH SẢN PHẨM & BỘ LỌC
+// =============================================================================
+function renderProducts() {
+    const grid = document.getElementById("products-grid");
+    const countDisplay = document.getElementById("product-count-display");
+    const emptyState = document.getElementById("empty-state");
+    const activeTagsBox = document.getElementById("active-filter-tags");
+    const tagCategory = document.getElementById("tag-category");
+    const tagPrice = document.getElementById("tag-price");
 
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    if (AppState.isLoading) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted);">
+                <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid rgba(140,109,88,0.2); border-top-color: #8c6d58; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;"></div>
+                <p style="font-size: 0.95rem; font-weight: 500;">Đang đồng bộ dữ liệu từ Database...</p>
+            </div>
+        `;
+        if (emptyState) emptyState.style.display = "none";
+        return;
+    }
 
-    const iconMap = {
-        success: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
-        error: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
-        info: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+    // Lọc theo Category
+    let filtered = AppState.products.filter(item => {
+        if (AppState.currentCategory !== "all" && item.category !== AppState.currentCategory) {
+            return false;
+        }
+
+        // Lọc theo từ khóa tìm kiếm
+        if (AppState.searchQuery.trim() !== "") {
+            const q = AppState.searchQuery.toLowerCase().trim();
+            const matchName = item.name.toLowerCase().includes(q);
+            const matchCat = item.categoryName.toLowerCase().includes(q);
+            const matchMaterial = item.material.toLowerCase().includes(q);
+            if (!matchName && !matchCat && !matchMaterial) return false;
+        }
+
+        // Lọc theo mức giá
+        if (AppState.priceFilter === "under-5m" && item.price >= 5000000) return false;
+        if (AppState.priceFilter === "5m-15m" && (item.price < 5000000 || item.price > 15000000)) return false;
+        if (AppState.priceFilter === "above-15m" && item.price <= 15000000) return false;
+
+        return true;
+    });
+
+    // Sắp xếp
+    if (AppState.sortOrder === "price-asc") {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (AppState.sortOrder === "price-desc") {
+        filtered.sort((a, b) => b.price - a.price);
+    } else if (AppState.sortOrder === "rating-desc") {
+        filtered.sort((a, b) => b.rating - a.rating);
+    } else {
+        // featured: giữ nguyên hoặc ưu tiên badge featured
+        filtered.sort((a, b) => (b.badge ? 1 : 0) - (a.badge ? 1 : 0));
+    }
+
+    // Hiển thị số lượng
+    countDisplay.textContent = filtered.length;
+
+    // Cập nhật tag lọc
+    const hasFilter = AppState.currentCategory !== "all" || AppState.priceFilter !== "all" || AppState.searchQuery !== "";
+    if (hasFilter) {
+        activeTagsBox.style.display = "flex";
+        const catMap = {
+            "living-room": "Phòng Khách",
+            "dining": "Bàn Ăn & Bếp",
+            "bedroom": "Phòng Ngủ",
+            "workspace": "Góc Làm Việc",
+            "decor": "Đèn & Decor"
+        };
+        tagCategory.textContent = catMap[AppState.currentCategory] || "Tất cả phòng";
+        const priceMap = {
+            "under-5m": "< 5.000.000₫",
+            "5m-15m": "5 - 15 triệu",
+            "above-15m": "> 15.000.000₫"
+        };
+        tagPrice.textContent = priceMap[AppState.priceFilter] || "Tất cả mức giá";
+    } else {
+        activeTagsBox.style.display = "none";
+    }
+
+    if (filtered.length === 0) {
+        grid.innerHTML = "";
+        emptyState.style.display = "block";
+        return;
+    }
+
+    const isAdmin = AppState.user && AppState.user.role === "admin";
+    const btnAdminAdd = document.getElementById("btn-admin-add-product");
+    if (btnAdminAdd) {
+        btnAdminAdd.style.display = isAdmin ? "inline-flex" : "none";
+    }
+
+    grid.innerHTML = filtered.map(item => `
+        <article class="product-card" data-id="${item.id}">
+            <div class="product-thumb-wrap">
+                ${item.badge ? `<span class="product-card-badge badge-${item.badgeType}">${item.badge}</span>` : ''}
+                <img src="${item.image}" alt="${item.name}" class="product-thumb" loading="lazy">
+                <div class="product-thumb-actions">
+                    <button type="button" class="btn-quickview" onclick="openProductModal(${item.id})">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Xem Nhanh
+                    </button>
+                </div>
+            </div>
+            <div class="product-body">
+                <span class="product-category-name">${item.categoryName}</span>
+                <h3 class="product-name" onclick="openProductModal(${item.id})">${item.name}</h3>
+                <p class="product-specs">${item.material} &bull; ${item.dimensions}</p>
+                <div class="product-rating">
+                    ${'★'.repeat(Math.floor(item.rating))}
+                    <span>${item.rating} (${item.reviewsCount})</span>
+                </div>
+                <div class="product-footer">
+                    <div class="product-price-box">
+                        <span class="price-current">${formatVND(item.price)}</span>
+                        ${item.originalPrice ? `<span class="price-old">${formatVND(item.originalPrice)}</span>` : ''}
+                    </div>
+                    <button type="button" class="btn-add-cart" onclick="addToCart(${item.id})">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        Thêm Vào Giỏ
+                    </button>
+                </div>
+            </div>
+            ${isAdmin ? `
+                <div class="product-admin-bar">
+                    <button type="button" class="btn-card-admin-edit" onclick="openAdminEditModal(${item.id})" title="Chỉnh sửa thông tin món hàng">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Sửa
+                    </button>
+                    <button type="button" class="btn-card-admin-delete" onclick="handleAdminDeleteProduct(${item.id})" title="Xóa món hàng khỏi showroom">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Xóa
+                    </button>
+                </div>
+            ` : ''}
+        </article>
+    `).join("");
+}
+
+// =============================================================================
+// 4. QUẢN LÝ GIỎ HÀNG (CART STATE & SLIDE DRAWER)
+// =============================================================================
+function saveCart() {
+    localStorage.setItem("blanc_cart", JSON.stringify(AppState.cart));
+    updateCartBadge();
+}
+
+function updateCartBadge() {
+    const badge = document.getElementById("cart-badge");
+    const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
+    badge.textContent = totalCount;
+}
+
+function addToCart(productId, quantity = 1) {
+    const product = AppState.products.find(p => p.id === productId);
+    if (!product) return;
+
+    const existingIndex = AppState.cart.findIndex(item => item.id === productId);
+    if (existingIndex > -1) {
+        AppState.cart[existingIndex].quantity += quantity;
+    } else {
+        AppState.cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            material: product.material,
+            dimensions: product.dimensions,
+            quantity: quantity
+        });
+    }
+
+    saveCart();
+    renderCart();
+    showToast(`Đã thêm "${product.name}" vào giỏ hàng!`);
+}
+
+function updateCartQty(productId, delta) {
+    const item = AppState.cart.find(i => i.id === productId);
+    if (!item) return;
+
+    item.quantity += delta;
+    if (item.quantity <= 0) {
+        removeFromCart(productId);
+        return;
+    }
+
+    saveCart();
+    renderCart();
+}
+
+function removeFromCart(productId) {
+    AppState.cart = AppState.cart.filter(i => i.id !== productId);
+    saveCart();
+    renderCart();
+    showToast("Đã xóa sản phẩm khỏi giỏ hàng.");
+}
+
+function renderCart() {
+    const body = document.getElementById("cart-drawer-body");
+    const countText = document.getElementById("cart-drawer-count");
+    const subtotalEl = document.getElementById("cart-subtotal");
+    const totalEl = document.getElementById("cart-total");
+    const footer = document.getElementById("cart-drawer-footer");
+
+    const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
+    countText.textContent = `(${totalCount} sản phẩm)`;
+
+    if (AppState.cart.length === 0) {
+        body.innerHTML = `
+            <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+                <div style="font-size: 3rem; margin-bottom: 12px;">🛍️</div>
+                <h4 style="color: var(--text-primary); margin-bottom: 8px;">Giỏ hàng của bạn đang trống</h4>
+                <p style="font-size: 0.88rem; margin-bottom: 20px;">Hãy dạo xem các bộ sưu tập nội thất tuyệt đẹp của BLANC'.</p>
+                <button type="button" class="btn-primary" onclick="closeCart(); document.getElementById('catalog').scrollIntoView();">Khám Phá Sản Phẩm</button>
+            </div>
+        `;
+        footer.style.display = "none";
+        return;
+    }
+
+    footer.style.display = "block";
+    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    subtotalEl.textContent = formatVND(subtotal);
+    totalEl.textContent = formatVND(subtotal);
+
+    body.innerHTML = AppState.cart.map(item => `
+        <div class="cart-item-row">
+            <img src="${item.image}" alt="${item.name}" class="cart-item-img">
+            <div class="cart-item-details">
+                <div>
+                    <h4 class="cart-item-title">${item.name}</h4>
+                    <span class="cart-item-specs">${item.material}</span>
+                </div>
+                <div class="cart-item-bottom">
+                    <div class="qty-control">
+                        <button type="button" class="qty-btn" onclick="updateCartQty(${item.id}, -1)">-</button>
+                        <span class="qty-number">${item.quantity}</span>
+                        <button type="button" class="qty-btn" onclick="updateCartQty(${item.id}, 1)">+</button>
+                    </div>
+                    <div>
+                        <span class="cart-item-price">${formatVND(item.price * item.quantity)}</span>
+                        <button type="button" class="btn-remove-item" onclick="removeFromCart(${item.id})">Xóa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join("");
+}
+
+function openCart() {
+    renderCart();
+    document.getElementById("cart-drawer-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeCart() {
+    document.getElementById("cart-drawer-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+// =============================================================================
+// 5. MODAL XEM CHI TIẾT SẢN PHẨM (QUICK VIEW)
+// =============================================================================
+function openProductModal(productId) {
+    const product = AppState.products.find(p => p.id === productId);
+    if (!product) return;
+
+    const modalContent = document.getElementById("product-modal-content");
+    modalContent.innerHTML = `
+        <div class="modal-img-col">
+            <img src="${product.image}" alt="${product.name}">
+        </div>
+        <div class="modal-info-col">
+            <span class="product-category-name">${product.categoryName}</span>
+            <h3>${product.name}</h3>
+            <div class="modal-price-wrap">
+                <span class="current">${formatVND(product.price)}</span>
+                ${product.originalPrice ? `<span class="price-old">${formatVND(product.originalPrice)}</span>` : ''}
+            </div>
+            <p class="modal-desc">${product.description}</p>
+            <div class="modal-specs-table">
+                <div class="spec-row">
+                    <span>Chất liệu:</span>
+                    <span>${product.material}</span>
+                </div>
+                <div class="spec-row">
+                    <span>Kích thước:</span>
+                    <span>${product.dimensions}</span>
+                </div>
+                <div class="spec-row">
+                    <span>Chính sách bảo hành:</span>
+                    <span>24 tháng chính hãng tại nhà</span>
+                </div>
+                <div class="spec-row">
+                    <span>Tình trạng kho:</span>
+                    <span style="color: #2b7a4b;">✓ Sẵn hàng tại Showroom</span>
+                </div>
+            </div>
+            <div class="modal-actions-row">
+                <button type="button" class="btn-primary btn-block" onclick="addToCart(${product.id}); closeProductModal();">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Thêm Vào Giỏ Hàng
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("product-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeProductModal() {
+    document.getElementById("product-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+// =============================================================================
+// 6. CHECKOUT & ĐẶT HÀNG NỘI THẤT
+// =============================================================================
+function openCheckout() {
+    if (AppState.cart.length === 0) {
+        showToast("Giỏ hàng của bạn đang trống.");
+        return;
+    }
+
+    closeCart();
+
+    const countEl = document.getElementById("checkout-items-count");
+    const totalEl = document.getElementById("checkout-total-amount");
+    const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    countEl.textContent = `${totalCount} sản phẩm`;
+    totalEl.textContent = formatVND(subtotal);
+
+    // Tự động điền thông tin nếu user đã đăng nhập
+    if (AppState.user) {
+        document.getElementById("checkout-name").value = AppState.user.full_name || AppState.user.username;
+        document.getElementById("checkout-phone").value = AppState.user.phone || "";
+        document.getElementById("checkout-address").value = AppState.user.address || "";
+    }
+
+    document.getElementById("checkout-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeCheckout() {
+    document.getElementById("checkout-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+function handleCheckoutSubmit(e) {
+    e.preventDefault();
+
+    const name = document.getElementById("checkout-name").value.trim();
+    const phone = document.getElementById("checkout-phone").value.trim();
+    const address = document.getElementById("checkout-address").value.trim();
+    const notes = document.getElementById("checkout-notes").value.trim();
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+    const totalAmount = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const orderCode = "BLC-" + Math.floor(1000 + Math.random() * 9000);
+
+    const newOrder = {
+        code: orderCode,
+        createdAt: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
+        customerName: name,
+        phone: phone,
+        address: address,
+        notes: notes,
+        paymentMethod: paymentMethod === "cod" ? "Thanh toán COD khi nhận" : "Chuyển khoản QR",
+        totalAmount: totalAmount,
+        status: "Đang chuẩn bị hàng",
+        statusClass: "status-shipping",
+        items: [...AppState.cart]
     };
 
+    AppState.orders.unshift(newOrder);
+    localStorage.setItem("blanc_orders", JSON.stringify(AppState.orders));
+
+    // Đồng bộ đơn hàng lên Backend Database
+    try {
+        fetch(`${API_BASE}/orders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                customer_name: name,
+                customer_phone: phone,
+                shipping_address: address,
+                notes: notes,
+                payment_method: paymentMethod,
+                items: AppState.cart.map(c => ({
+                    product_id: c.id,
+                    product_name: c.name,
+                    product_image: c.image,
+                    price: c.price,
+                    quantity: c.quantity,
+                    subtotal: c.price * c.quantity
+                }))
+            })
+        }).catch(err => console.log("Đơn lưu local:", err));
+    } catch (_) {}
+
+    // Dọn giỏ hàng
+    AppState.cart = [];
+    saveCart();
+
+    closeCheckout();
+
+    // Hiển thị modal thành công
+    document.getElementById("success-order-code").textContent = orderCode;
+    document.getElementById("success-modal-overlay").classList.add("active");
+}
+
+// =============================================================================
+// 7. LỊCH SỬ ĐƠN HÀNG (ORDERS HISTORY)
+// =============================================================================
+function openOrderHistory() {
+    const listContainer = document.getElementById("orders-list-container");
+
+    if (AppState.orders.length === 0) {
+        listContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px 16px; color: var(--text-muted);">
+                <div style="font-size: 2.5rem; margin-bottom: 8px;">📦</div>
+                <h4>Bạn chưa có đơn đặt hàng nào</h4>
+                <p style="font-size: 0.85rem;">Các đơn hàng nội thất sau khi đặt sẽ được lưu và hiển thị tại đây.</p>
+            </div>
+        `;
+    } else {
+        listContainer.innerHTML = AppState.orders.map(order => `
+            <div class="order-card-row">
+                <div class="order-card-header">
+                    <div>
+                        <strong>Mã đơn: ${order.code}</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">${order.createdAt}</div>
+                    </div>
+                    <span class="status-badge ${order.statusClass}">${order.status}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <div><strong>Giao đến:</strong> ${order.customerName} &bull; ${order.phone}</div>
+                    <div><strong>Địa chỉ:</strong> ${order.address}</div>
+                    <div><strong>Thanh toán:</strong> ${order.paymentMethod}</div>
+                </div>
+                <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85rem;">${order.items.length} món đồ nội thất</span>
+                    <strong style="color: var(--accent); font-size: 1.05rem;">${formatVND(order.totalAmount)}</strong>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    document.getElementById("orders-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeOrderHistory() {
+    document.getElementById("orders-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+// =============================================================================
+// 8. ĐĂNG NHẬP / ĐĂNG KÝ (AUTH)
+// =============================================================================
+function openAuthModal() {
+    if (AppState.user) {
+        const roleDesc = AppState.user.role === "admin" ? " [QUẢN TRỊ VIÊN ADMIN]" : "";
+        if (confirm(`Chào bạn ${AppState.user.full_name || AppState.user.username}${roleDesc}!\n\nBạn có muốn đăng xuất tài khoản?`)) {
+            AppState.user = null;
+            localStorage.removeItem("blanc_user");
+            updateAuthDisplay();
+            renderProducts();
+            showToast("Đã đăng xuất tài khoản.");
+        }
+        return;
+    }
+    document.getElementById("auth-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeAuthModal() {
+    document.getElementById("auth-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+function updateAuthDisplay() {
+    const label = document.getElementById("auth-label");
+    if (AppState.user) {
+        if (AppState.user.role === "admin") {
+            label.textContent = "Admin";
+            label.style.color = "#8c6d58";
+            label.style.fontWeight = "700";
+        } else {
+            label.textContent = AppState.user.username;
+            label.style.color = "";
+            label.style.fontWeight = "";
+        }
+    } else {
+        label.textContent = "Tài khoản";
+        label.style.color = "";
+        label.style.fontWeight = "";
+    }
+}
+
+// =============================================================================
+// 9. TOAST THÔNG BÁO TƯƠNG TÁC
+// =============================================================================
+function showToast(message, isAccent = true) {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    toast.className = `toast ${isAccent ? 'toast-accent' : ''}`;
     toast.innerHTML = `
-        ${iconMap[type] || ''}
-        <span>${escapeHtml(message)}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>${message}</span>
     `;
 
     container.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.transition = 'all 200ms ease';
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 200);
-    }, duration);
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(20px)";
+        toast.style.transition = "all 0.3s ease";
+        setTimeout(() => toast.remove(), 300);
+    }, 3200);
 }
 
-// ==========================================
-// 4. Persistence & Data Loading
-// ==========================================
+// =============================================================================
+// 10. HERO SLIDER LOGIC (ẢNH CHẠY Y HỆT WEB BLANC.VN)
+// =============================================================================
+let currentHeroSlide = 0;
+let heroSliderInterval = null;
 
-function saveTasksToStorage() {
-    try {
-        localStorage.setItem('taskflow_tasks', JSON.stringify(state.tasks));
-    } catch (e) {
-        console.error("Storage error:", e);
-    }
-}
+function initHeroSlider() {
+    const slides = document.querySelectorAll(".hero-slide");
+    const dots = document.querySelectorAll(".slider-dot");
+    const prevBtn = document.getElementById("hero-slider-prev");
+    const nextBtn = document.getElementById("hero-slider-next");
+    const sliderSection = document.getElementById("hero");
 
-function loadTasksFromStorage() {
-    try {
-        const stored = localStorage.getItem('taskflow_tasks');
-        if (stored) {
-            state.tasks = JSON.parse(stored);
-            return;
-        }
-    } catch (e) {
-        console.warn("Failed reading localStorage:", e);
-    }
-    // Fallback to rich demo data
-    state.tasks = JSON.parse(JSON.stringify(DEFAULT_DEMO_TASKS));
-    saveTasksToStorage();
-}
+    if (!slides.length) return;
 
-// ==========================================
-// 5. Backend REST API Communication
-// ==========================================
-
-async function apiRequest(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const headers = {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-    };
-
-    if (state.token) {
-        headers['Authorization'] = `Bearer ${state.token}`;
-    }
-
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
-
-    if (!response.ok) {
-        let errData = {};
-        try {
-            errData = await response.json();
-        } catch {
-            errData = { detail: response.statusText };
-        }
-        throw new Error(errData.detail || `Lỗi HTTP ${response.status}`);
-    }
-
-    return response.json();
-}
-
-async function checkServerHealth() {
-    const badge = document.getElementById('server-status-badge');
-    const text = document.getElementById('server-status-text');
-
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-        const res = await fetch(`${API_BASE_URL}/healthz`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-            state.isServerOnline = true;
-            badge.classList.add('online');
-            text.textContent = "Backend: Online 🟢";
-            return true;
-        }
-    } catch {
-        // Offline
-    }
-
-    state.isServerOnline = false;
-    badge.classList.remove('online');
-    text.textContent = "Chế độ Local 🟡";
-    return false;
-}
-
-// Convert Backend Todo to TaskFlow Kanban Task
-function todoToTask(todo) {
-    let meta = {};
-    let desc = todo.description || '';
-
-    // Check if extra metadata is encoded in JSON
-    if (desc.startsWith('{') && desc.endsWith('}')) {
-        try {
-            meta = JSON.parse(desc);
-            desc = meta.desc || '';
-        } catch {
-            meta = {};
-        }
-    }
-
-    return {
-        id: todo.id,
-        title: todo.title,
-        description: desc,
-        column: meta.column || (todo.completed ? 'complete' : 'new'),
-        tag: meta.tag || (todo.completed ? 'green' : 'blue'),
-        assignee: meta.assignee || 'Alex',
-        dueDate: meta.dueDate || (todo.completed ? 'Hoàn thành' : 'Hôm nay'),
-        cover: meta.cover || 'none',
-        comments: meta.comments || 0,
-        attachments: meta.attachments || 0,
-        checklist: meta.checklist || '',
-        completed: Boolean(todo.completed)
-    };
-}
-
-// Convert TaskFlow Kanban Task to Backend Payload
-function taskToTodoPayload(task) {
-    const meta = {
-        desc: task.description,
-        column: task.column,
-        tag: task.tag,
-        assignee: task.assignee,
-        dueDate: task.dueDate,
-        cover: task.cover,
-        comments: task.comments || 0,
-        attachments: task.attachments || 0,
-        checklist: task.checklist || ''
-    };
-
-    return {
-        title: task.title,
-        description: JSON.stringify(meta),
-        completed: task.column === 'complete' || Boolean(task.completed)
-    };
-}
-
-async function syncWithBackendIfAvailable() {
-    if (!state.token) return;
-
-    try {
-        const todos = await apiRequest('/todos');
-        if (Array.isArray(todos) && todos.length > 0) {
-            state.tasks = todos.map(todoToTask);
-            saveTasksToStorage();
-            renderCurrentView();
-        }
-    } catch (e) {
-        console.warn("Backend sync failed:", e.message);
-    }
-}
-
-// ==========================================
-// 6. Rendering Logic: Kanban Board View
-// ==========================================
-
-function getFilteredTasks() {
-    return state.tasks.filter(task => {
-        // Filter out completed if requested
-        if (state.hideCompleted && task.completed) return false;
-
-        // Search query filter
-        if (state.searchQuery) {
-            const q = state.searchQuery.toLowerCase();
-            const matchTitle = (task.title || '').toLowerCase().includes(q);
-            const matchDesc = (task.description || '').toLowerCase().includes(q);
-            const matchAssignee = (task.assignee || '').toLowerCase().includes(q);
-            if (!matchTitle && !matchDesc && !matchAssignee) return false;
+    function goToSlide(index) {
+        if (index < 0) {
+            currentHeroSlide = slides.length - 1;
+        } else if (index >= slides.length) {
+            currentHeroSlide = 0;
+        } else {
+            currentHeroSlide = index;
         }
 
-        return true;
-    });
-}
-
-function renderBoardView() {
-    const filtered = getFilteredTasks();
-
-    const columns = {
-        new: document.getElementById('cards-new'),
-        in_progress: document.getElementById('cards-in_progress'),
-        complete: document.getElementById('cards-complete'),
-        reference: document.getElementById('cards-reference')
-    };
-
-    const counts = {
-        new: 0,
-        in_progress: 0,
-        complete: 0,
-        reference: 0
-    };
-
-    // Clear column cards
-    Object.values(columns).forEach(col => {
-        if (col) col.innerHTML = '';
-    });
-
-    // Populate filtered cards into respective columns
-    filtered.forEach(task => {
-        const colKey = task.column || (task.completed ? 'complete' : 'new');
-        if (!columns[colKey]) return;
-
-        counts[colKey] = (counts[colKey] || 0) + 1;
-        const cardEl = createCardElement(task);
-        columns[colKey].appendChild(cardEl);
-    });
-
-    // Update column badge counters
-    document.getElementById('count-new').textContent = counts.new;
-    document.getElementById('count-in_progress').textContent = counts.in_progress;
-    document.getElementById('count-complete').textContent = counts.complete;
-    document.getElementById('count-reference').textContent = counts.reference;
-
-    // Update global summary bar
-    updateSummaryStats();
-}
-
-function createCardElement(task) {
-    const card = document.createElement('article');
-    card.className = `task-card ${task.completed ? 'is-completed' : ''}`;
-    card.setAttribute('draggable', 'true');
-    card.setAttribute('data-id', task.id);
-    card.id = `task-card-${task.id}`;
-
-    // 1. Cover Illustration (if any)
-    let coverHtml = '';
-    if (task.cover && SVG_COVERS[task.cover]) {
-        coverHtml = `<div class="card-cover" onclick="openEditTaskModal(${task.id})">${SVG_COVERS[task.cover]}</div>`;
-    }
-
-    // 2. Color Stripe (Cyan, Pink, Blue, Purple, Amber, Green)
-    const stripeClass = `stripe-${task.tag || 'blue'}`;
-
-    // 3. Checklist Badge (e.g. 4/10 or 4/4)
-    let checklistHtml = '';
-    if (task.checklist) {
-        const isDone = task.checklist.includes('/') && task.checklist.split('/')[0] === task.checklist.split('/')[1];
-        checklistHtml = `
-            <div class="card-checklist-badge ${isDone ? 'is-all-done' : ''}" title="Tiến độ checklist">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                <span>${escapeHtml(task.checklist)}</span>
-            </div>
-        `;
-    }
-
-    // 4. Assignee Avatar
-    const assigneeInitial = (task.assignee || 'U').charAt(0).toUpperCase();
-    const avatarBg = {
-        Alex: '#3b82f6',
-        Sarah: '#ec4899',
-        David: '#10b981',
-        Emma: '#f59e0b'
-    }[task.assignee] || '#6366f1';
-
-    // 5. Comments & Attachments Meta
-    let metaItems = '';
-    if (task.comments > 0) {
-        metaItems += `
-            <span class="card-meta-item" title="${task.comments} bình luận">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                <span>${task.comments}</span>
-            </span>
-        `;
-    }
-    if (task.attachments > 0) {
-        metaItems += `
-            <span class="card-meta-item" title="${task.attachments} tệp đính kèm">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                <span>${task.attachments}</span>
-            </span>
-        `;
-    }
-
-    card.innerHTML = `
-        ${coverHtml}
-        <div class="card-color-stripe ${stripeClass}"></div>
-        <div class="card-body">
-            <div class="card-title-row">
-                <input type="checkbox" class="card-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete(${task.id}, event)" title="${task.completed ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}">
-                <h4 class="card-title" onclick="openEditTaskModal(${task.id})">${escapeHtml(task.title)}</h4>
-                <button class="card-quick-menu-btn" onclick="openEditTaskModal(${task.id})" title="Chỉnh sửa">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                </button>
-            </div>
-            ${task.description ? `<p class="card-desc" onclick="openEditTaskModal(${task.id})">${escapeHtml(task.description)}</p>` : ''}
-            ${checklistHtml}
-        </div>
-        <div class="card-footer">
-            <div class="card-footer-left">
-                <div class="card-assignee-avatar" style="background: ${avatarBg};" title="Người phụ trách: ${escapeHtml(task.assignee)}">${assigneeInitial}</div>
-                ${task.dueDate ? `<span class="card-due-date ${task.dueDate.toLowerCase() === 'today' || task.dueDate.toLowerCase() === 'hôm nay' ? 'is-today' : ''}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>${escapeHtml(task.dueDate)}</span>` : ''}
-            </div>
-            <div class="card-footer-right">
-                ${metaItems}
-            </div>
-        </div>
-    `;
-
-    // Attach Drag and Drop handlers
-    attachDragEventsToCard(card, task);
-
-    return card;
-}
-
-// ==========================================
-// 7. Drag and Drop Interaction
-// ==========================================
-
-function attachDragEventsToCard(card, task) {
-    card.addEventListener('dragstart', (e) => {
-        state.draggedTaskId = task.id;
-        card.classList.add('is-dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(task.id));
-    });
-
-    card.addEventListener('dragend', () => {
-        card.classList.remove('is-dragging');
-        state.draggedTaskId = null;
-        document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('drag-over'));
-    });
-}
-
-function initDragAndDropColumns() {
-    const columns = document.querySelectorAll('.kanban-column');
-
-    columns.forEach(col => {
-        const colKey = col.dataset.column;
-
-        col.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            col.classList.add('drag-over');
+        slides.forEach((slide, idx) => {
+            slide.classList.toggle("active", idx === currentHeroSlide);
         });
 
-        col.addEventListener('dragleave', (e) => {
-            // Only remove when really leaving column
-            if (!col.contains(e.relatedTarget)) {
-                col.classList.remove('drag-over');
-            }
+        dots.forEach((dot, idx) => {
+            dot.classList.toggle("active", idx === currentHeroSlide);
         });
+    }
 
-        col.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            col.classList.remove('drag-over');
+    function startAutoSlide() {
+        stopAutoSlide();
+        heroSliderInterval = setInterval(() => {
+            goToSlide(currentHeroSlide + 1);
+        }, 4000);
+    }
 
-            const taskId = state.draggedTaskId || parseInt(e.dataTransfer.getData('text/plain'), 10);
-            if (!taskId) return;
+    function stopAutoSlide() {
+        if (heroSliderInterval) {
+            clearInterval(heroSliderInterval);
+            heroSliderInterval = null;
+        }
+    }
 
-            const task = state.tasks.find(t => t.id === taskId);
-            if (!task) return;
+    if (prevBtn) {
+        prevBtn.addEventListener("click", () => {
+            goToSlide(currentHeroSlide - 1);
+            startAutoSlide();
+        });
+    }
 
-            const oldColumn = task.column;
-            if (oldColumn === colKey) return;
+    if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+            goToSlide(currentHeroSlide + 1);
+            startAutoSlide();
+        });
+    }
 
-            // Move to new column
-            task.column = colKey;
-            if (colKey === 'complete') {
-                task.completed = true;
-                task.dueDate = task.dueDate || 'Đã xong';
-            } else if (oldColumn === 'complete') {
-                task.completed = false;
-            }
-
-            saveTasksToStorage();
-            renderBoardView();
-            showToast(`Đã chuyển thẻ sang cột ${getColumnName(colKey)}`, 'success', 2000);
-
-            // Sync with backend if connected
-            if (state.token && state.isServerOnline) {
-                try {
-                    await apiRequest(`/todos/${task.id}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(taskToTodoPayload(task))
-                    });
-                } catch (err) {
-                    console.error("Backend update failed:", err);
-                }
-            }
+    dots.forEach((dot, idx) => {
+        dot.addEventListener("click", () => {
+            goToSlide(idx);
+            startAutoSlide();
         });
     });
+
+    if (sliderSection) {
+        sliderSection.addEventListener("mouseenter", stopAutoSlide);
+        sliderSection.addEventListener("mouseleave", startAutoSlide);
+    }
+
+    startAutoSlide();
 }
 
-function getColumnName(key) {
-    return {
-        new: 'New Requests',
-        in_progress: 'In Progress',
-        complete: 'Complete',
-        reference: 'Reference'
-    }[key] || key;
-}
-
-// ==========================================
-// 8. Other Views (List, Calendar, Progress)
-// ==========================================
-
-function switchView(viewName) {
-    state.currentView = viewName;
-
-    // Update Tab UI
-    document.querySelectorAll('.view-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.view === viewName);
+function filterByRoom(category) {
+    const navItems = document.querySelectorAll(".nav-item");
+    AppState.currentCategory = category;
+    navItems.forEach(b => {
+        b.classList.toggle("active", b.dataset.category === category);
     });
-
-    // Hide all view containers
-    document.getElementById('view-board').style.display = 'none';
-    document.getElementById('view-list').style.display = 'none';
-    document.getElementById('view-calendar').style.display = 'none';
-    document.getElementById('view-progress').style.display = 'none';
-
-    // Show active view
-    if (viewName === 'board') {
-        document.getElementById('view-board').style.display = 'flex';
-        renderBoardView();
-    } else if (viewName === 'list') {
-        document.getElementById('view-list').style.display = 'block';
-        renderListView();
-    } else if (viewName === 'calendar') {
-        document.getElementById('view-calendar').style.display = 'flex';
-        renderCalendarView();
-    } else if (viewName === 'progress') {
-        document.getElementById('view-progress').style.display = 'flex';
-        renderProgressView();
+    renderProducts();
+    const catalog = document.getElementById("catalog");
+    if (catalog) {
+        catalog.scrollIntoView({ behavior: "smooth" });
     }
 }
 
-function renderCurrentView() {
-    switchView(state.currentView);
-}
+// =============================================================================
+// 11. GẮN SỰ KIỆN KHỞI TẠO (EVENT LISTENERS)
+// =============================================================================
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Khởi tạo slider & render ban đầu
+    initHeroSlider();
+    updateCartBadge();
+    updateAuthDisplay();
+    renderProducts();
 
-function renderListView() {
-    const tbody = document.getElementById('list-table-body');
-    const filtered = getFilteredTasks();
+    // 2. Lọc danh mục phòng trên Navigation bar
+    const navItems = document.querySelectorAll(".nav-item");
+    navItems.forEach(btn => {
+        btn.addEventListener("click", () => {
+            navItems.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            AppState.currentCategory = btn.dataset.category;
+            renderProducts();
+            document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+        });
+    });
 
-    if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">Không có công việc nào</td></tr>`;
-        return;
-    }
+    // 3. Khám phá theo thẻ Room Showcase
+    const roomCards = document.querySelectorAll(".room-card");
+    roomCards.forEach(card => {
+        card.addEventListener("click", () => {
+            const cat = card.dataset.category;
+            AppState.currentCategory = cat;
+            navItems.forEach(b => {
+                b.classList.toggle("active", b.dataset.category === cat);
+            });
+            renderProducts();
+            document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+        });
+    });
 
-    tbody.innerHTML = filtered.map(task => {
-        const badgeMap = {
-            new: '<span class="list-col-badge badge-new">New Requests</span>',
-            in_progress: '<span class="list-col-badge badge-progress">In Progress</span>',
-            complete: '<span class="list-col-badge badge-complete">Complete</span>',
-            reference: '<span class="list-col-badge badge-reference">Reference</span>'
+    // 4. Tìm kiếm từ khóa
+    const searchInput = document.getElementById("input-search");
+    const clearSearchBtn = document.getElementById("btn-clear-search");
+
+    searchInput.addEventListener("input", (e) => {
+        AppState.searchQuery = e.target.value;
+        clearSearchBtn.style.display = e.target.value ? "block" : "none";
+        renderProducts();
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        AppState.searchQuery = "";
+        clearSearchBtn.style.display = "none";
+        renderProducts();
+    });
+
+    // 5. Lọc mức giá & Sắp xếp
+    document.getElementById("filter-price").addEventListener("change", (e) => {
+        AppState.priceFilter = e.target.value;
+        renderProducts();
+    });
+
+    document.getElementById("filter-sort").addEventListener("change", (e) => {
+        AppState.sortOrder = e.target.value;
+        renderProducts();
+    });
+
+    // 6. Reset Filters
+    const resetFn = () => {
+        AppState.currentCategory = "all";
+        AppState.priceFilter = "all";
+        AppState.searchQuery = "";
+        searchInput.value = "";
+        document.getElementById("filter-price").value = "all";
+        navItems.forEach(b => b.classList.toggle("active", b.dataset.category === "all"));
+        renderProducts();
+    };
+
+    document.getElementById("btn-reset-filters").addEventListener("click", resetFn);
+    document.getElementById("btn-clear-filters").addEventListener("click", resetFn);
+
+    // 7. Cart Drawer Toggles
+    document.getElementById("btn-open-cart").addEventListener("click", openCart);
+    document.getElementById("btn-close-cart").addEventListener("click", closeCart);
+    document.getElementById("cart-drawer-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "cart-drawer-overlay") closeCart();
+    });
+
+    // 8. Product Detail Modal
+    document.getElementById("btn-close-product-modal").addEventListener("click", closeProductModal);
+    document.getElementById("product-modal-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "product-modal-overlay") closeProductModal();
+    });
+
+    // 9. Checkout Triggers
+    document.getElementById("btn-checkout-from-cart").addEventListener("click", openCheckout);
+    document.getElementById("btn-close-checkout").addEventListener("click", closeCheckout);
+    document.getElementById("checkout-modal-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "checkout-modal-overlay") closeCheckout();
+    });
+    document.getElementById("form-checkout").addEventListener("submit", handleCheckoutSubmit);
+
+    // 10. Success Modal Triggers
+    document.getElementById("btn-close-success").addEventListener("click", () => {
+        document.getElementById("success-modal-overlay").classList.remove("active");
+        document.body.style.overflow = "";
+    });
+    document.getElementById("btn-view-order-history").addEventListener("click", () => {
+        document.getElementById("success-modal-overlay").classList.remove("active");
+        openOrderHistory();
+    });
+
+    // 11. Order History Modal
+    document.getElementById("btn-open-orders").addEventListener("click", openOrderHistory);
+    document.getElementById("btn-close-orders").addEventListener("click", closeOrderHistory);
+    document.getElementById("orders-modal-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "orders-modal-overlay") closeOrderHistory();
+    });
+
+    // 12. Auth Modal
+    document.getElementById("btn-open-auth").addEventListener("click", openAuthModal);
+    document.getElementById("btn-close-auth").addEventListener("click", closeAuthModal);
+    document.getElementById("auth-modal-overlay").addEventListener("click", (e) => {
+        if (e.target.id === "auth-modal-overlay") closeAuthModal();
+    });
+
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const formLogin = document.getElementById("form-auth-login");
+    const formRegister = document.getElementById("form-auth-register");
+
+    tabLogin.addEventListener("click", () => {
+        tabLogin.classList.add("active");
+        tabRegister.classList.remove("active");
+        formLogin.style.display = "flex";
+        formRegister.style.display = "none";
+    });
+
+    tabRegister.addEventListener("click", () => {
+        tabRegister.classList.add("active");
+        tabLogin.classList.remove("active");
+        formLogin.style.display = "none";
+        formRegister.style.display = "flex";
+    });
+
+    formLogin.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value.trim().toLowerCase();
+        const isAdmin = email === "admin@blanc.vn" || email === "admin";
+        AppState.user = {
+            username: isAdmin ? "admin" : email.split("@")[0],
+            email: email,
+            full_name: isAdmin ? "Quản Trị Viên (Admin)" : email.split("@")[0].toUpperCase(),
+            role: isAdmin ? "admin" : "customer",
+            phone: "0908 123 456",
+            address: "Hà Nội"
         };
+        localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+        updateAuthDisplay();
+        closeAuthModal();
+        renderProducts();
+        showToast(isAdmin ? "Đã đăng nhập quyền QUẢN TRỊ VIÊN (Admin)!" : `Đăng nhập thành công! Chào mừng ${AppState.user.username}`);
+    });
 
-        return `
-            <tr>
-                <td>
-                    <input type="checkbox" class="card-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete(${task.id}, event)">
-                </td>
-                <td style="font-weight: 600; cursor: pointer;" onclick="openEditTaskModal(${task.id})">
-                    <span style="${task.completed ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${escapeHtml(task.title)}</span>
-                </td>
-                <td>${badgeMap[task.column] || task.column}</td>
-                <td style="color: #64748b; font-size: 0.82rem;">${escapeHtml(task.dueDate || '-')}</td>
-                <td>
-                    <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:500;">
-                        <span style="width:20px;height:20px;border-radius:50%;background:#3b82f6;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;">${(task.assignee || 'U')[0]}</span>
-                        ${escapeHtml(task.assignee)}
-                    </span>
-                </td>
-                <td>${task.checklist ? `<span class="card-checklist-badge">${escapeHtml(task.checklist)}</span>` : '-'}</td>
-                <td style="text-align: right;">
-                    <button class="btn-col-action" onclick="openEditTaskModal(${task.id})" title="Sửa">✏️</button>
-                    <button class="btn-col-action" onclick="openDeleteModal(${task.id})" title="Xóa" style="color:#ef4444;">🗑️</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function renderCalendarView() {
-    const grid = document.getElementById('calendar-grid');
-    const now = new Date();
-    const monthName = now.toLocaleString('vi-VN', { month: 'long', year: 'numeric' });
-    document.getElementById('calendar-month-title').textContent = monthName.toUpperCase();
-
-    const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    let html = daysOfWeek.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
-
-    // Generate 28 dummy days for current month view
-    for (let day = 1; day <= 28; day++) {
-        // Find tasks for this day
-        const dayTasks = state.tasks.filter(t => (t.id % 28) + 1 === day);
-        const chipsHtml = dayTasks.map(t => `
-            <div class="calendar-task-chip" onclick="openEditTaskModal(${t.id})" title="${escapeHtml(t.title)}">
-                ${escapeHtml(t.title)}
-            </div>
-        `).join('');
-
-        html += `
-            <div class="calendar-day-cell">
-                <span class="calendar-day-num">${day}</span>
-                ${chipsHtml}
-            </div>
-        `;
-    }
-
-    grid.innerHTML = html;
-}
-
-function renderProgressView() {
-    const total = state.tasks.length;
-    const inProgress = state.tasks.filter(t => t.column === 'in_progress').length;
-    const complete = state.tasks.filter(t => t.column === 'complete' || t.completed).length;
-    const reference = state.tasks.filter(t => t.column === 'reference').length;
-
-    document.getElementById('metric-total').textContent = total;
-    document.getElementById('metric-in-progress').textContent = inProgress;
-    document.getElementById('metric-done').textContent = complete;
-    document.getElementById('metric-reference').textContent = reference;
-}
-
-function updateSummaryStats() {
-    const total = state.tasks.length;
-    const newCount = state.tasks.filter(t => t.column === 'new').length;
-    const progressCount = state.tasks.filter(t => t.column === 'in_progress').length;
-    const completeCount = state.tasks.filter(t => t.column === 'complete' || t.completed).length;
-
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-new').textContent = newCount;
-    document.getElementById('stat-progress').textContent = progressCount;
-    document.getElementById('stat-complete').textContent = completeCount;
-
-    const pct = total === 0 ? 0 : Math.round((completeCount / total) * 100);
-    document.getElementById('stat-percent-text').textContent = `${pct}%`;
-    document.getElementById('stat-percent-bar').style.width = `${pct}%`;
-}
-
-// ==========================================
-// 9. Task Actions: Create, Edit, Toggle, Delete
-// ==========================================
-
-function openNewTaskModal(defaultColumn = 'new') {
-    const modal = document.getElementById('modal-task');
-    const form = document.getElementById('form-task');
-    form.reset();
-
-    document.getElementById('modal-task-title').textContent = "Thêm công việc mới";
-    document.getElementById('task-id').value = '';
-    document.getElementById('task-column-select').value = defaultColumn;
-
-    // Reset color & cover selections
-    setSelectedColor('blue');
-    setSelectedCover('none');
-
-    modal.showModal();
-    document.getElementById('task-title-input').focus();
-}
-
-function openEditTaskModal(taskId) {
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const modal = document.getElementById('modal-task');
-    document.getElementById('modal-task-title').textContent = "Chỉnh sửa công việc";
-    document.getElementById('task-id').value = task.id;
-    document.getElementById('task-title-input').value = task.title;
-    document.getElementById('task-column-select').value = task.column;
-    document.getElementById('task-desc-input').value = task.description || '';
-    document.getElementById('task-assignee-select').value = task.assignee || 'Alex';
-    document.getElementById('task-duedate-input').value = task.dueDate || '';
-    document.getElementById('task-checklist-input').value = task.checklist || '';
-
-    setSelectedColor(task.tag || 'blue');
-    setSelectedCover(task.cover || 'none');
-
-    modal.showModal();
-}
-
-function quickAddPrompt(column) {
-    openNewTaskModal(column);
-}
-
-async function handleSaveTask(e) {
-    e.preventDefault();
-    const idVal = document.getElementById('task-id').value;
-    const isEdit = Boolean(idVal);
-
-    const title = document.getElementById('task-title-input').value.trim();
-    if (!title) {
-        showToast("Vui lòng nhập tiêu đề công việc", "error");
-        return;
-    }
-
-    const column = document.getElementById('task-column-select').value;
-    const description = document.getElementById('task-desc-input').value.trim();
-    const assignee = document.getElementById('task-assignee-select').value;
-    const dueDate = document.getElementById('task-duedate-input').value.trim();
-    const checklist = document.getElementById('task-checklist-input').value.trim();
-    const tag = state.activeEditColor || 'blue';
-    const cover = state.activeEditCover || 'none';
-    const completed = column === 'complete';
-
-    if (isEdit) {
-        const taskId = parseInt(idVal, 10);
-        const index = state.tasks.findIndex(t => t.id === taskId);
-        if (index !== -1) {
-            state.tasks[index] = {
-                ...state.tasks[index],
-                title,
-                column,
-                description,
-                assignee,
-                dueDate,
-                checklist,
-                tag,
-                cover,
-                completed
+    const btnQuickAdmin = document.getElementById("btn-quick-admin-login");
+    if (btnQuickAdmin) {
+        btnQuickAdmin.addEventListener("click", () => {
+            AppState.user = {
+                username: "admin",
+                email: "admin@blanc.vn",
+                full_name: "Quản Trị Viên Showroom (Admin)",
+                role: "admin",
+                phone: "0987 654 321",
+                address: "Showroom Blanc Luxury"
             };
+            localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+            updateAuthDisplay();
+            closeAuthModal();
+            renderProducts();
+            showToast("Đã kích hoạt quyền QUẢN TRỊ VIÊN (Admin)! Bạn có thể Thêm, Sửa, Xóa sản phẩm.");
+        });
+    }
 
-            showToast("Đã cập nhật công việc thành công!", "success");
+    formRegister.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const username = document.getElementById("reg-username").value.trim();
+        const name = document.getElementById("reg-name").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
 
-            if (state.token && state.isServerOnline) {
-                try {
-                    await apiRequest(`/todos/${taskId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(taskToTodoPayload(state.tasks[index]))
-                    });
-                } catch (err) {
-                    console.error("Backend error:", err);
-                }
-            }
-        }
-    } else {
-        // Create New Task
-        const newId = Date.now();
-        const newTask = {
-            id: newId,
-            title,
-            column,
-            description,
-            assignee,
-            dueDate,
-            checklist,
-            tag,
-            cover,
-            comments: 0,
-            attachments: 0,
-            completed
+        AppState.user = {
+            username: username,
+            email: email,
+            full_name: name,
+            role: "customer",
+            phone: "",
+            address: ""
         };
-
-        state.tasks.unshift(newTask);
-        showToast("Đã tạo công việc mới!", "success");
-
-        if (state.token && state.isServerOnline) {
-            try {
-                const created = await apiRequest('/todos', {
-                    method: 'POST',
-                    body: JSON.stringify(taskToTodoPayload(newTask))
-                });
-                newTask.id = created.id;
-            } catch (err) {
-                console.error("Backend error:", err);
-            }
-        }
-    }
-
-    saveTasksToStorage();
-    document.getElementById('modal-task').close();
-    renderCurrentView();
-}
-
-async function toggleTaskComplete(taskId, e) {
-    if (e) e.stopPropagation();
-
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    task.completed = !task.completed;
-    if (task.completed) {
-        task.column = 'complete';
-        showToast(`Đã hoàn thành: "${task.title}"`, 'success', 2000);
-    } else {
-        task.column = 'in_progress';
-        showToast(`Đã chuyển lại sang Đang làm`, 'info', 2000);
-    }
-
-    saveTasksToStorage();
-    renderCurrentView();
-
-    if (state.token && state.isServerOnline) {
-        try {
-            await apiRequest(`/todos/${taskId}`, {
-                method: 'PUT',
-                body: JSON.stringify(taskToTodoPayload(task))
-            });
-        } catch (err) {
-            console.error("Backend error:", err);
-        }
-    }
-}
-
-function openDeleteModal(taskId) {
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    state.deleteTargetId = taskId;
-    document.getElementById('delete-task-preview').textContent = `"${task.title}"`;
-    document.getElementById('modal-delete').showModal();
-}
-
-async function handleConfirmDelete() {
-    if (!state.deleteTargetId) return;
-
-    const id = state.deleteTargetId;
-    state.tasks = state.tasks.filter(t => t.id !== id);
-    state.deleteTargetId = null;
-
-    saveTasksToStorage();
-    document.getElementById('modal-delete').close();
-    renderCurrentView();
-    showToast("Đã xóa công việc", "info");
-
-    if (state.token && state.isServerOnline) {
-        try {
-            await apiRequest(`/todos/${id}`, { method: 'DELETE' });
-        } catch (err) {
-            console.error("Backend error:", err);
-        }
-    }
-}
-
-// Color and Cover selection UI helpers
-function setSelectedColor(colorName) {
-    state.activeEditColor = colorName;
-    document.querySelectorAll('.color-radio-opt').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.color === colorName);
-    });
-}
-
-function setSelectedCover(coverName) {
-    state.activeEditCover = coverName;
-    document.querySelectorAll('.cover-opt').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.cover === coverName);
-    });
-}
-
-// ==========================================
-// 10. Star, Search, Filter & Dedicated Auth Page
-// ==========================================
-
-function showAuthPage() {
-    const authPage = document.getElementById('auth-page');
-    const workspace = document.getElementById('workspace-view');
-    if (authPage) authPage.style.display = 'flex';
-    if (workspace) workspace.style.display = 'none';
-}
-
-function showWorkspaceView() {
-    const authPage = document.getElementById('auth-page');
-    const workspace = document.getElementById('workspace-view');
-    if (authPage) authPage.style.display = 'none';
-    if (workspace) workspace.style.display = 'flex';
-    updateUserUI();
-    renderCurrentView();
-}
-
-function toggleStarProject() {
-    state.isStarred = !state.isStarred;
-    localStorage.setItem('taskflow_starred', String(state.isStarred));
-    const btn = document.getElementById('btn-star-project');
-    if (btn) btn.classList.toggle('is-starred', state.isStarred);
-    showToast(state.isStarred ? "Đã thêm vào dự án yêu thích ⭐" : "Đã bỏ khỏi mục yêu thích", "info");
-}
-
-function resetDemoData() {
-    state.tasks = JSON.parse(JSON.stringify(DEFAULT_DEMO_TASKS));
-    saveTasksToStorage();
-    renderCurrentView();
-    showToast("Đã khôi phục dữ liệu mẫu gốc từ hình ảnh!", "success");
-}
-
-async function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    if (!email || !password) {
-        showToast("Vui lòng điền đầy đủ email và mật khẩu", "error");
-        return;
-    }
-
-    try {
-        const res = await apiRequest('/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-
-        state.token = res.access_token;
-        state.user = res.user;
-        localStorage.setItem('taskmaster_token', res.access_token);
-
-        showWorkspaceView();
-        showToast(`Chào mừng trở lại, ${res.user.username}! 👋`, 'success');
-        syncWithBackendIfAvailable();
-    } catch (err) {
-        showToast(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.", "error");
-    }
-}
-
-async function handleRegister(e) {
-    e.preventDefault();
-    const username = document.getElementById('register-username').value.trim();
-    const email = document.getElementById('register-email').value.trim();
-    const password = document.getElementById('register-password').value;
-
-    if (!username || !email || !password) {
-        showToast("Vui lòng nhập đầy đủ thông tin đăng ký", "error");
-        return;
-    }
-
-    if (password.length < 6) {
-        showToast("Mật khẩu phải có tối thiểu 6 ký tự", "error");
-        return;
-    }
-
-    try {
-        const res = await apiRequest('/signup', {
-            method: 'POST',
-            body: JSON.stringify({ username, email, password })
-        });
-
-        state.token = res.access_token;
-        state.user = res.user;
-        localStorage.setItem('taskmaster_token', res.access_token);
-
-        showWorkspaceView();
-        showToast("Tạo tài khoản thành công! 🚀", "success");
-        syncWithBackendIfAvailable();
-    } catch (err) {
-        showToast(err.message || "Đăng ký thất bại", "error");
-    }
-}
-
-function logout() {
-    state.token = null;
-    state.user = null;
-    localStorage.removeItem('taskmaster_token');
-    showAuthPage();
-    updateUserUI();
-    showToast("Đã đăng xuất khỏi tài khoản", "info");
-}
-
-function updateUserUI() {
-    const profileBar = document.getElementById('user-profile-bar');
-    const gotoAuthBtn = document.getElementById('btn-header-goto-auth');
-    const avatar = document.getElementById('header-user-avatar');
-    const name = document.getElementById('header-user-name');
-
-    if (state.user && state.token) {
-        if (profileBar) profileBar.style.display = 'flex';
-        if (gotoAuthBtn) gotoAuthBtn.style.display = 'none';
-        if (avatar) avatar.textContent = (state.user.username || 'U')[0].toUpperCase();
-        if (name) name.textContent = state.user.username;
-    } else {
-        if (profileBar) profileBar.style.display = 'none';
-        if (gotoAuthBtn) gotoAuthBtn.style.display = 'inline-flex';
-    }
-}
-
-async function verifyInitialSession() {
-    if (!state.token) {
-        showAuthPage();
-        return;
-    }
-
-    try {
-        const user = await apiRequest('/me');
-        state.user = user;
-        showWorkspaceView();
-        syncWithBackendIfAvailable();
-    } catch {
-        state.token = null;
-        localStorage.removeItem('taskmaster_token');
-        showAuthPage();
-    }
-}
-
-// ==========================================
-// 11. Event Listeners Setup
-// ==========================================
-
-function setupEventListeners() {
-    // View Tabs
-    document.querySelectorAll('.view-tab').forEach(tab => {
-        tab.addEventListener('click', () => switchView(tab.dataset.view));
+        localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+        updateAuthDisplay();
+        closeAuthModal();
+        renderProducts();
+        showToast(`Đăng ký thành công! Chào mừng ${username}`);
     });
 
-    // Top action buttons
-    const btnNewTask = document.getElementById('btn-open-new-task-modal');
-    if (btnNewTask) btnNewTask.addEventListener('click', () => openNewTaskModal('new'));
+    // 13. Admin Management Triggers
+    const btnAdminAdd = document.getElementById("btn-admin-add-product");
+    if (btnAdminAdd) btnAdminAdd.addEventListener("click", openAdminAddModal);
 
-    const btnStar = document.getElementById('btn-star-project');
-    if (btnStar) btnStar.addEventListener('click', toggleStarProject);
+    const btnCloseAdmin = document.getElementById("btn-close-admin-modal");
+    if (btnCloseAdmin) btnCloseAdmin.addEventListener("click", closeAdminModal);
 
-    const btnReset = document.getElementById('btn-reset-demo');
-    if (btnReset) btnReset.addEventListener('click', resetDemoData);
+    const btnCancelAdmin = document.getElementById("btn-cancel-admin-modal");
+    if (btnCancelAdmin) btnCancelAdmin.addEventListener("click", closeAdminModal);
 
-    // Toggle hide completed
-    const toggleCompletedBtn = document.getElementById('btn-toggle-completed');
-    if (toggleCompletedBtn) {
-        toggleCompletedBtn.addEventListener('click', () => {
-            state.hideCompleted = !state.hideCompleted;
-            toggleCompletedBtn.classList.toggle('is-filtered', state.hideCompleted);
-            toggleCompletedBtn.querySelector('span').textContent = state.hideCompleted ? "Chưa xong" : "Tất cả";
-            renderCurrentView();
+    const adminOverlay = document.getElementById("admin-product-modal-overlay");
+    if (adminOverlay) {
+        adminOverlay.addEventListener("click", (e) => {
+            if (e.target.id === "admin-product-modal-overlay") closeAdminModal();
         });
     }
 
-    // Search input
-    const searchInput = document.getElementById('input-search');
-    const clearBtn = document.getElementById('btn-clear-search');
+    const formAdmin = document.getElementById("form-admin-product");
+    if (formAdmin) formAdmin.addEventListener("submit", handleAdminProductSubmit);
 
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            state.searchQuery = e.target.value.trim();
-            if (clearBtn) clearBtn.style.display = state.searchQuery ? 'block' : 'none';
-            renderCurrentView();
-        });
-
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                state.searchQuery = '';
-                clearBtn.style.display = 'none';
-                renderCurrentView();
-            });
-        }
-
-        // Shortcut: Ctrl+K or Cmd+K
-        window.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                searchInput.focus();
-                searchInput.select();
+    const inputAdminImg = document.getElementById("admin-prod-image");
+    if (inputAdminImg) {
+        inputAdminImg.addEventListener("input", () => {
+            const val = inputAdminImg.value.trim();
+            const box = document.getElementById("admin-img-preview-box");
+            const img = document.getElementById("admin-img-preview");
+            if (val) {
+                img.src = val;
+                box.style.display = "block";
+            } else {
+                box.style.display = "none";
             }
         });
     }
 
-    // Color Tags selector
-    document.querySelectorAll('.color-radio-opt').forEach(opt => {
-        opt.addEventListener('click', () => setSelectedColor(opt.dataset.color));
-    });
-
-    // Cover art options selector
-    document.querySelectorAll('.cover-opt').forEach(opt => {
-        opt.addEventListener('click', () => setSelectedCover(opt.dataset.cover));
-    });
-
-    // Task Modal Form
-    const formTask = document.getElementById('form-task');
-    if (formTask) formTask.addEventListener('submit', handleSaveTask);
-
-    const btnCloseTask = document.getElementById('btn-close-task-modal');
-    if (btnCloseTask) btnCloseTask.addEventListener('click', () => document.getElementById('modal-task').close());
-
-    const btnCancelTask = document.getElementById('btn-cancel-task');
-    if (btnCancelTask) btnCancelTask.addEventListener('click', () => document.getElementById('modal-task').close());
-
-    // Delete Modal
-    const btnConfirmDelete = document.getElementById('btn-confirm-delete');
-    if (btnConfirmDelete) btnConfirmDelete.addEventListener('click', handleConfirmDelete);
-
-    const btnCloseDelete = document.getElementById('btn-close-delete-modal');
-    if (btnCloseDelete) btnCloseDelete.addEventListener('click', () => document.getElementById('modal-delete').close());
-
-    const btnCancelDelete = document.getElementById('btn-cancel-delete');
-    if (btnCancelDelete) btnCancelDelete.addEventListener('click', () => document.getElementById('modal-delete').close());
-
-    // Dedicated Auth Page Controls
-    const tabAuthLogin = document.getElementById('tab-auth-login');
-    const tabAuthRegister = document.getElementById('tab-auth-register');
-    const formAuthLogin = document.getElementById('form-auth-login');
-    const formAuthRegister = document.getElementById('form-auth-register');
-    const btnSwitchToLogin = document.getElementById('btn-switch-to-login');
-    const btnExploreGuest = document.getElementById('btn-explore-as-guest');
-    const btnHeaderGotoAuth = document.getElementById('btn-header-goto-auth');
-    const btnHeaderLogout = document.getElementById('btn-header-logout');
-
-    if (tabAuthLogin && tabAuthRegister) {
-        tabAuthLogin.addEventListener('click', () => {
-            tabAuthLogin.classList.add('active');
-            tabAuthRegister.classList.remove('active');
-            if (formAuthLogin) formAuthLogin.style.display = 'flex';
-            if (formAuthRegister) formAuthRegister.style.display = 'none';
-        });
-
-        tabAuthRegister.addEventListener('click', () => {
-            tabAuthRegister.classList.add('active');
-            tabAuthLogin.classList.remove('active');
-            if (formAuthRegister) formAuthRegister.style.display = 'flex';
-            if (formAuthLogin) formAuthLogin.style.display = 'none';
-        });
-    }
-
-    if (btnSwitchToLogin && tabAuthLogin) {
-        btnSwitchToLogin.addEventListener('click', () => tabAuthLogin.click());
-    }
-
-    if (btnExploreGuest) {
-        btnExploreGuest.addEventListener('click', () => {
-            showWorkspaceView();
-            showToast("Đang trải nghiệm ở chế độ Khách (Demo)", "info");
-        });
-    }
-
-    if (btnHeaderGotoAuth) {
-        btnHeaderGotoAuth.addEventListener('click', showAuthPage);
-    }
-
-    if (btnHeaderLogout) {
-        btnHeaderLogout.addEventListener('click', logout);
-    }
-
-    if (formAuthLogin) formAuthLogin.addEventListener('submit', handleLogin);
-    if (formAuthRegister) formAuthRegister.addEventListener('submit', handleRegister);
-
-    // Backdrop click close for dialogs
-    document.querySelectorAll('.app-dialog').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            const rect = modal.getBoundingClientRect();
-            const isInDialog = (
-                rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
-                rect.left <= e.clientX && e.clientX <= rect.left + rect.width
-            );
-            if (!isInDialog) {
-                modal.close();
-            }
-        });
-    });
-}
-
-// Global exposure for inline HTML events
-window.quickAddPrompt = quickAddPrompt;
-window.openEditTaskModal = openEditTaskModal;
-window.openDeleteModal = openDeleteModal;
-window.toggleTaskComplete = toggleTaskComplete;
-
-// ==========================================
-// 12. Application Bootstrap
-// ==========================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadTasksFromStorage();
-    setupEventListeners();
-    initDragAndDropColumns();
-
-    // Check favorite status
-    if (state.isStarred) {
-        const starBtn = document.getElementById('btn-star-project');
-        if (starBtn) starBtn.classList.add('is-starred');
-    }
-
-    // Check initial user authentication session
-    verifyInitialSession();
+    // Tự động đồng bộ sản phẩm từ Backend Database nếu có
+    loadProductsFromBackend();
 });
+
+// =============================================================================
+// 14. ADMIN SẢN PHẨM (THÊM, SỬA, XÓA MÓN HÀNG)
+// =============================================================================
+async function loadProductsFromBackend() {
+    try {
+        const res = await fetch(`${API_BASE}/products`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+                const catSlugMap = {
+                    1: { slug: "living-room", name: "Phòng Khách" },
+                    2: { slug: "dining", name: "Bàn Ăn & Bếp" },
+                    3: { slug: "bedroom", name: "Phòng Ngủ" },
+                    4: { slug: "workspace", name: "Góc Làm Việc" },
+                    5: { slug: "decor", name: "Đèn & Decor" }
+                };
+                AppState.products = data.map(p => {
+                    const cInfo = catSlugMap[p.category_id] || { slug: "living-room", name: "Phòng Khách" };
+                    return {
+                        id: p.id,
+                        name: p.name,
+                        category: cInfo.slug,
+                        categoryId: p.category_id,
+                        categoryName: cInfo.name,
+                        price: p.price,
+                        originalPrice: p.original_price,
+                        material: p.material || "Gỗ tự nhiên cao cấp",
+                        dimensions: p.dimensions || "Tiêu chuẩn",
+                        rating: p.rating || 5.0,
+                        reviewsCount: p.reviews_count || 20,
+                        badge: p.badge || null,
+                        badgeType: p.badge_type || "featured",
+                        image: p.image_url,
+                        description: p.description || ""
+                    };
+                });
+                renderProducts();
+            }
+        }
+    } catch (err) {
+        console.log("Không thể kết nối Backend:", err);
+    } finally {
+        AppState.isLoading = false;
+        renderProducts();
+    }
+}
+
+function openAdminAddModal() {
+    document.getElementById("admin-modal-title").textContent = "Thêm Món Đồ Nội Thất Mới";
+    document.getElementById("admin-prod-id").value = "";
+    document.getElementById("admin-prod-name").value = "";
+    document.getElementById("admin-prod-category").value = "1";
+    document.getElementById("admin-prod-price").value = "";
+    document.getElementById("admin-prod-orig-price").value = "";
+    document.getElementById("admin-prod-image").value = "";
+    document.getElementById("admin-img-preview-box").style.display = "none";
+    document.getElementById("admin-prod-material").value = "Gỗ Sồi Bắc Mỹ tự nhiên";
+    document.getElementById("admin-prod-dimensions").value = "";
+    document.getElementById("admin-prod-badge").value = "";
+    document.getElementById("admin-prod-badge-type").value = "featured";
+    document.getElementById("admin-prod-desc").value = "";
+
+    document.getElementById("admin-product-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function openAdminEditModal(productId) {
+    const item = AppState.products.find(p => p.id === productId);
+    if (!item) return;
+
+    document.getElementById("admin-modal-title").textContent = `Chỉnh Sửa: ${item.name}`;
+    document.getElementById("admin-prod-id").value = item.id;
+    document.getElementById("admin-prod-name").value = item.name;
+    
+    const catIdMap = {
+        "living-room": "1",
+        "dining": "2",
+        "bedroom": "3",
+        "workspace": "4",
+        "decor": "5"
+    };
+    document.getElementById("admin-prod-category").value = item.categoryId || catIdMap[item.category] || "1";
+    document.getElementById("admin-prod-price").value = item.price;
+    document.getElementById("admin-prod-orig-price").value = item.originalPrice || "";
+    document.getElementById("admin-prod-image").value = item.image;
+    
+    const previewBox = document.getElementById("admin-img-preview-box");
+    const previewImg = document.getElementById("admin-img-preview");
+    if (item.image) {
+        previewImg.src = item.image;
+        previewBox.style.display = "block";
+    } else {
+        previewBox.style.display = "none";
+    }
+
+    document.getElementById("admin-prod-material").value = item.material || "";
+    document.getElementById("admin-prod-dimensions").value = item.dimensions || "";
+    document.getElementById("admin-prod-badge").value = item.badge || "";
+    document.getElementById("admin-prod-badge-type").value = item.badgeType || "featured";
+    document.getElementById("admin-prod-desc").value = item.description || "";
+
+    document.getElementById("admin-product-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeAdminModal() {
+    document.getElementById("admin-product-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+async function handleAdminProductSubmit(e) {
+    e.preventDefault();
+
+    const id = document.getElementById("admin-prod-id").value;
+    const name = document.getElementById("admin-prod-name").value.trim();
+    const categoryId = parseInt(document.getElementById("admin-prod-category").value, 10);
+    const price = parseFloat(document.getElementById("admin-prod-price").value);
+    const origPriceVal = document.getElementById("admin-prod-orig-price").value;
+    const originalPrice = origPriceVal ? parseFloat(origPriceVal) : null;
+    const image = document.getElementById("admin-prod-image").value.trim();
+    const material = document.getElementById("admin-prod-material").value.trim() || "Gỗ tự nhiên cao cấp";
+    const dimensions = document.getElementById("admin-prod-dimensions").value.trim() || "Tiêu chuẩn";
+    const badge = document.getElementById("admin-prod-badge").value.trim() || null;
+    const badgeType = document.getElementById("admin-prod-badge-type").value;
+    const description = document.getElementById("admin-prod-desc").value.trim();
+
+    const catSlugMap = {
+        1: { slug: "living-room", name: "Phòng Khách" },
+        2: { slug: "dining", name: "Bàn Ăn & Bếp" },
+        3: { slug: "bedroom", name: "Phòng Ngủ" },
+        4: { slug: "workspace", name: "Góc Làm Việc" },
+        5: { slug: "decor", name: "Đèn & Decor" }
+    };
+    const catInfo = catSlugMap[categoryId] || { slug: "living-room", name: "Phòng Khách" };
+
+    const payload = {
+        name: name,
+        category_id: categoryId,
+        price: price,
+        original_price: originalPrice,
+        image_url: image,
+        material: material,
+        dimensions: dimensions,
+        badge: badge,
+        badge_type: badgeType,
+        description: description,
+        stock: 10,
+        rating: 5.0,
+        reviews_count: 20,
+        is_featured: badge === "Best Seller" || badge === "Đặc Tuyển"
+    };
+
+    if (id) {
+        // Cập nhật sản phẩm
+        const prodId = parseInt(id, 10);
+        try {
+            await fetch(`${API_BASE}/products/${prodId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Admin-Demo": "true"
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (err) {
+            console.log("Cập nhật cục bộ:", err);
+        }
+
+        const idx = AppState.products.findIndex(p => p.id === prodId);
+        if (idx > -1) {
+            AppState.products[idx] = {
+                ...AppState.products[idx],
+                name: name,
+                category: catInfo.slug,
+                categoryId: categoryId,
+                categoryName: catInfo.name,
+                price: price,
+                originalPrice: originalPrice,
+                image: image,
+                material: material,
+                dimensions: dimensions,
+                badge: badge,
+                badgeType: badgeType,
+                description: description
+            };
+        }
+        showToast(`Đã cập nhật sản phẩm "${name}" thành công!`);
+    } else {
+        // Thêm sản phẩm mới
+        let newId = Date.now();
+        try {
+            const res = await fetch(`${API_BASE}/products`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Admin-Demo": "true"
+                },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const created = await res.json();
+                if (created && created.id) newId = created.id;
+            }
+        } catch (err) {
+            console.log("Thêm cục bộ:", err);
+        }
+
+        const newItem = {
+            id: newId,
+            name: name,
+            category: catInfo.slug,
+            categoryId: categoryId,
+            categoryName: catInfo.name,
+            price: price,
+            originalPrice: originalPrice,
+            image: image,
+            material: material,
+            dimensions: dimensions,
+            rating: 5.0,
+            reviewsCount: 1,
+            badge: badge,
+            badgeType: badgeType,
+            description: description
+        };
+        AppState.products.unshift(newItem);
+        showToast(`Đã thêm món "${name}" vào Showroom!`);
+    }
+
+    closeAdminModal();
+    renderProducts();
+}
+
+async function handleAdminDeleteProduct(productId) {
+    const item = AppState.products.find(p => p.id === productId);
+    const itemName = item ? item.name : `ID #${productId}`;
+
+    if (!confirm(`XÁC NHẬN TỪ ADMIN:\n\nBạn có chắc chắn muốn xóa sản phẩm:\n"${itemName}" khỏi danh sách Showroom?`)) {
+        return;
+    }
+
+    try {
+        await fetch(`${API_BASE}/products/${productId}`, {
+            method: "DELETE",
+            headers: {
+                "X-Admin-Demo": "true"
+            }
+        });
+    } catch (err) {
+        console.log("Xóa cục bộ:", err);
+    }
+
+    AppState.products = AppState.products.filter(p => p.id !== productId);
+    renderProducts();
+    showToast(`Đã xóa món "${itemName}" khỏi Showroom.`);
+}
+
+// Global exposure
+window.openAdminAddModal = openAdminAddModal;
+window.openAdminEditModal = openAdminEditModal;
+window.handleAdminDeleteProduct = handleAdminDeleteProduct;
+window.closeAdminModal = closeAdminModal;
+

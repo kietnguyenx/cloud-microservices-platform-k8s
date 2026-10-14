@@ -1,601 +1,741 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design Requests &bull; Team Project Management (White & Blue)</title>
-    <meta name="description" content="Giao diện quản lý dự án và công việc Kanban tone trắng xanh hiện đại, lấy cảm hứng từ Asana và Trello.">
+    <title>BLANC' LIVING &bull; Nội Thất Tối Giản & Đương Đại</title>
+    <meta name="description"
+        content="BLANC' LIVING - Showroom nội thất phong cách Scandinavian & Japandi tối giản, ấm cúng. Thiết kế bàn ghế, sofa, giường ngủ gỗ tự nhiên cao cấp.">
 
-    <!-- Google Fonts: Plus Jakarta Sans -->
+    <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <!-- Background Ambient Glows -->
-    <div class="bg-ambient-glow glow-blue-1"></div>
-    <div class="bg-ambient-glow glow-blue-2"></div>
+    <!-- Main Navigation Bar -->
+    <header class="site-header" id="site-header">
+        <div class="container header-inner">
+            <!-- Brand Logo -->
+            <a href="#hero" class="brand-logo" id="brand-logo">
+                <span class="logo-mark">BLANC<span>'</span></span>
+                <span class="logo-sub">LIVING</span>
+            </a>
 
-    <!-- Notification Toast Container -->
-    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+            <!-- Navigation Links -->
+            <nav class="main-nav" id="main-nav">
+                <button type="button" class="nav-item active" data-category="all">Tất Cả</button>
+                <button type="button" class="nav-item" data-category="living-room">Phòng Khách</button>
+                <button type="button" class="nav-item" data-category="dining">Bàn Ăn & Bếp</button>
+                <button type="button" class="nav-item" data-category="bedroom">Phòng Ngủ</button>
+                <button type="button" class="nav-item" data-category="workspace">Góc Làm Việc</button>
+                <button type="button" class="nav-item" data-category="decor">Đèn & Decor</button>
+            </nav>
 
-    <!-- ==============================================================================
-         1. TRANG ĐĂNG NHẬP / ĐĂNG KÝ (Dedicated Auth Page - Tone Trắng Xanh)
-         ============================================================================== -->
-    <section id="auth-page" class="auth-page">
-        <div class="auth-card">
-            <!-- Brand & Welcome Header -->
-            <div class="auth-brand-header">
-                <div class="app-logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
-                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                        <line x1="15" y1="3" x2="15" y2="10"></line>
+            <!-- Header Utilities / Actions -->
+            <div class="header-actions">
+                <!-- Quick Search -->
+                <div class="search-box">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
+                    <input type="text" id="input-search" placeholder="Tìm sofa, bàn gỗ, đèn..." autocomplete="off">
+                    <button type="button" id="btn-clear-search" class="btn-clear-search"
+                        style="display: none;">&times;</button>
                 </div>
-                <h2>TaskFlow <span>Studio</span></h2>
-                <p>Nền tảng quản lý dự án & công việc Kanban hiện đại</p>
+
+                <!-- Order History Action -->
+                <button type="button" class="action-btn" id="btn-open-orders" title="Lịch sử đơn hàng">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span class="btn-text">Đơn mua</span>
+                </button>
+
+                <!-- User Account Action -->
+                <button type="button" class="action-btn" id="btn-open-auth" title="Tài khoản khách hàng">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="btn-text" id="auth-label">Tài khoản</span>
+                </button>
+
+                <!-- Shopping Cart Action -->
+                <button type="button" class="action-btn cart-btn" id="btn-open-cart" title="Giỏ hàng">
+                    <div class="cart-icon-wrap">
+                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <path d="M16 10a4 4 0 0 1-8 0"></path>
+                        </svg>
+                        <span class="cart-badge" id="cart-badge">0</span>
+                    </div>
+                    <span class="btn-text">Giỏ hàng</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section: Tiêu đề chủ đạo đứng yên & Ảnh nền chạy phía sau (Blanc.vn Style) -->
+    <section class="hero-slider-section" id="hero" aria-label="Hero Slider">
+        <!-- Background Image Slides Track (Ảnh chạy ngầm phía sau) -->
+        <div class="hero-slider-track" id="hero-slider-track">
+            <!-- Slide 0: Sofa Modular Phòng Khách -->
+            <div class="hero-slide active" data-slide="0">
+                <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1920&q=85"
+                    alt="Phòng khách phong cách Blanc Japandi" class="hero-slide-bg">
+                <div class="hero-slide-tint"></div>
             </div>
 
-            <!-- Segmented Auth Switcher Tabs -->
-            <div class="auth-segmented-tabs">
-                <button type="button" id="tab-auth-login" class="auth-segmented-tab active">Đăng Nhập</button>
-                <button type="button" id="tab-auth-register" class="auth-segmented-tab">Đăng Ký Tài Khoản</button>
+            <!-- Slide 1: Bàn Ăn Gỗ Sồi Bắc Âu -->
+            <div class="hero-slide" data-slide="1">
+                <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1920&q=85"
+                    alt="Bàn ăn gỗ sồi tự nhiên Blanc" class="hero-slide-bg">
+                <div class="hero-slide-tint"></div>
             </div>
 
-            <!-- FORM ĐĂNG NHẬP -->
-            <form id="form-auth-login" class="auth-form" novalidate>
-                <div class="form-title-box">
-                    <h3>Chào mừng trở lại! 👋</h3>
-                    <p>Nhập email và mật khẩu để đồng bộ công việc của bạn.</p>
+            <!-- Slide 2: Phòng Ngủ Zen Living -->
+            <div class="hero-slide" data-slide="2">
+                <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1920&q=85"
+                    alt="Phòng ngủ Zen Scandinavian" class="hero-slide-bg">
+                <div class="hero-slide-tint"></div>
+            </div>
+
+            <!-- Slide 3: Góc Làm Việc Studio Workspace -->
+            <div class="hero-slide" data-slide="3">
+                <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1920&q=85"
+                    alt="Góc làm việc hiện đại" class="hero-slide-bg">
+                <div class="hero-slide-tint"></div>
+            </div>
+
+            <!-- Slide 4: Showroom & Góc Decor Tinh Tế -->
+            <div class="hero-slide" data-slide="4">
+                <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1920&q=85"
+                    alt="Showroom nội thất cao cấp BLANC'" class="hero-slide-bg">
+                <div class="hero-slide-tint"></div>
+            </div>
+        </div>
+
+        <!-- Stationary Overlay Content (1 Tiêu đề chủ đạo đứng yên cố định ở trên) -->
+        <div class="hero-stationary-overlay">
+            <div class="container hero-stationary-content">
+                <h1 class="hero-main-title">Đường nét tối giản kết hợp cùng <em>chất liệu nguyên bản</em>, bền bỉ theo năm tháng.</h1>
+                <p class="hero-main-desc">
+                    Tuyển chọn tinh hoa thiết kế Bắc Âu, mang đến cho bạn một chốn an yên, ấm cúng và trọn vẹn để trở về sau ngày dài.
+                </p>
+                <div class="hero-main-actions">
+                    <a href="#catalog" class="btn-primary" id="btn-hero-explore">
+                        Khám phá bộ sưu tập
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#room-showcase" class="btn-outline-light">
+                        Xem không gian phòng
+                    </a>
                 </div>
+            </div>
+        </div>
 
-                <div class="input-group">
-                    <label for="login-email">Địa chỉ Email</label>
-                    <div class="input-field-wrapper">
-                        <svg class="field-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                        <input type="email" id="login-email" placeholder="tenban@domain.com" required autocomplete="email">
-                    </div>
-                </div>
+        <!-- Slider Navigation Controls (Nút bấm chạy ảnh phía sau) -->
+        <button type="button" class="slider-arrow slider-prev" id="hero-slider-prev" aria-label="Ảnh trước">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <button type="button" class="slider-arrow slider-next" id="hero-slider-next" aria-label="Ảnh tiếp theo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </button>
 
-                <div class="input-group">
-                    <label for="login-password">Mật khẩu</label>
-                    <div class="input-field-wrapper">
-                        <svg class="field-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <button type="submit" id="btn-submit-login" class="btn-primary-auth">
-                    <span>Đăng Nhập Hệ Thống</span>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                </button>
-
-                <div class="auth-divider">
-                    <span>hoặc</span>
-                </div>
-
-                <button type="button" id="btn-explore-as-guest" class="btn-ghost-guest" title="Xem thử bảng Kanban">
-                    <span>Trải nghiệm nhanh chế độ Khách (Demo)</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-            </form>
-
-            <!-- FORM ĐĂNG KÝ -->
-            <form id="form-auth-register" class="auth-form" style="display: none;" novalidate>
-                <div class="form-title-box">
-                    <h3>Khởi tạo tài khoản mới 🚀</h3>
-                    <p>Bắt đầu tối ưu hóa năng suất nhóm chỉ trong vài giây.</p>
-                </div>
-
-                <div class="input-group">
-                    <label for="register-username">Tên người dùng (Username)</label>
-                    <div class="input-field-wrapper">
-                        <svg class="field-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <input type="text" id="register-username" placeholder="nguyenvan_a" required autocomplete="username">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="register-email">Địa chỉ Email</label>
-                    <div class="input-field-wrapper">
-                        <svg class="field-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                        <input type="email" id="register-email" placeholder="tenban@domain.com" required autocomplete="email">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="register-password">Mật khẩu</label>
-                    <div class="input-field-wrapper">
-                        <svg class="field-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <input type="password" id="register-password" placeholder="Tối thiểu 6 ký tự" required autocomplete="new-password">
-                    </div>
-                </div>
-
-                <button type="submit" id="btn-submit-register" class="btn-primary-auth">
-                    <span>Đăng Ký Tài Khoản</span>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                </button>
-
-                <div class="auth-divider">
-                    <span>hoặc</span>
-                </div>
-
-                <button type="button" id="btn-switch-to-login" class="btn-ghost-guest">
-                    <span>Đã có tài khoản? Đăng nhập ngay</span>
-                </button>
-            </form>
+        <!-- Slider Pagination Dots Indicator -->
+        <div class="slider-dots" id="hero-slider-dots">
+            <button type="button" class="slider-dot active" data-index="0" aria-label="Ảnh 1"></button>
+            <button type="button" class="slider-dot" data-index="1" aria-label="Ảnh 2"></button>
+            <button type="button" class="slider-dot" data-index="2" aria-label="Ảnh 3"></button>
+            <button type="button" class="slider-dot" data-index="3" aria-label="Ảnh 4"></button>
+            <button type="button" class="slider-dot" data-index="4" aria-label="Ảnh 5"></button>
         </div>
     </section>
 
-    <!-- ==============================================================================
-         2. KHÔNG GIAN LÀM VIỆC DỰ ÁN & KANBAN BOARD (Workspace View)
-         ============================================================================== -->
-    <div id="workspace-view" class="app-container" style="display: none;">
+    <!-- Value Propositions (Cam kết thương hiệu) -->
+    <section class="values-bar">
+        <div class="container values-grid">
+            <div class="value-item">
+                <div class="value-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Thiết Kế Độc Bản</h4>
+                    <p>Tối giản phong cách Bắc Âu & Japandi</p>
+                </div>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Chất Liệu Tuyển Chọn</h4>
+                    <p>Gỗ sồi nhập khẩu & da bò Nappa cao cấp</p>
+                </div>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Vận Chuyển & Lắp Đặt</h4>
+                    <p>Giao lắp tận nhà toàn quốc an toàn</p>
+                </div>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 14 14"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Bảo Hành 24 Tháng</h4>
+                    <p>Bảo trì trọn đời, hỗ trợ tận tâm</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <!-- TOP HEADER & PROJECT NAVIGATION BAR (Tone Trắng - Xanh) -->
-        <header class="app-header">
-            <!-- Row 1: Brand, Title, Search & Actions -->
-            <div class="header-top-row">
-                <div class="header-left">
-                    <!-- Project / App Logo Icon -->
-                    <div class="app-logo" title="TaskFlow Studio">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
-                            <line x1="9" y1="3" x2="9" y2="21"></line>
-                            <line x1="15" y1="3" x2="15" y2="10"></line>
-                        </svg>
-                    </div>
+    <!-- Room Categories Showcase -->
+    <section class="room-showcase" id="room-showcase">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">SHOP BY ROOM</span>
+                <h2 class="section-title">Khám Phá Theo Không Gian</h2>
+                <p class="section-desc">Mỗi gian phòng là một câu chuyện riêng biệt về phong cách và cá tính của gia
+                    chủ.</p>
+            </div>
 
-                    <!-- Project Title & Badges (Matching Image 1 & 2) -->
-                    <div class="project-meta">
-                        <div class="project-title-wrapper">
-                            <h1 class="project-title" id="current-project-title">
-                                Design Requests
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </h1>
-                            <button id="btn-star-project" class="icon-btn-ghost" title="Thêm vào mục yêu thích">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            </button>
-                        </div>
-                        <div class="project-badges">
-                            <span class="pill-badge" title="Dự án nhóm">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                                Team Project
-                            </span>
-                            <span class="pill-badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;" title="Chế độ riêng tư trong tổ chức">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                Nội bộ
-                            </span>
-                        </div>
+            <div class="room-grid">
+                <div class="room-card" data-category="living-room">
+                    <img src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=600&q=80"
+                        alt="Phòng khách">
+                    <div class="room-card-overlay">
+                        <h3>Phòng Khách</h3>
+                        <span>Sofa, Bàn trà, Armchair &bull; 6 Sản phẩm</span>
                     </div>
                 </div>
-
-                <!-- Right Tools: Search, New Task Button, User Profile / Auth Actions -->
-                <div class="header-right">
-                    <!-- Search Input Box (Pill Shape) -->
-                    <div class="header-search">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="input-search" placeholder="Tìm kiếm công việc... (Ctrl+K)">
-                        <button id="btn-clear-search" class="clear-search" title="Xóa tìm kiếm">✕</button>
+                <div class="room-card" data-category="dining">
+                    <img src="https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=600&q=80"
+                        alt="Bàn ăn & Bếp">
+                    <div class="room-card-overlay">
+                        <h3>Bàn Ăn & Bếp</h3>
+                        <span>Bàn gỗ sồi, Ghế ăn nệm da &bull; 4 Sản phẩm</span>
                     </div>
-
-                    <!-- Primary "+ New Task" Action Button -->
-                    <button id="btn-open-new-task-modal" class="btn-primary-add" title="Tạo thẻ công việc mới">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Thêm việc</span>
-                    </button>
-
-                    <!-- User Account / Auth Section in Navbar -->
-                    <div class="header-user-section" id="header-user-section">
-                        <!-- Logged In State Profile Bar -->
-                        <div class="user-profile-bar" id="user-profile-bar" style="display: none;">
-                            <div class="user-menu-avatar" id="header-user-avatar">U</div>
-                            <span class="user-menu-name" id="header-user-name">User</span>
-                            <button id="btn-header-logout" class="btn-logout-ghost" title="Đăng xuất khỏi tài khoản">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                <span>Đăng xuất</span>
-                            </button>
-                        </div>
-
-                        <!-- Guest State Trigger (to open Auth Page) -->
-                        <button id="btn-header-goto-auth" class="btn-auth-nav" title="Đăng nhập hoặc đăng ký tài khoản">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                            <span>Đăng Nhập / Đăng Ký</span>
-                        </button>
+                </div>
+                <div class="room-card" data-category="bedroom">
+                    <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80"
+                        alt="Phòng ngủ">
+                    <div class="room-card-overlay">
+                        <h3>Phòng Ngủ</h3>
+                        <span>Giường bọc nệm, Tủ đầu giường &bull; 4 Sản phẩm</span>
+                    </div>
+                </div>
+                <div class="room-card" data-category="workspace">
+                    <img src="https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=600&q=80"
+                        alt="Góc làm việc">
+                    <div class="room-card-overlay">
+                        <h3>Góc Làm Việc</h3>
+                        <span>Bàn làm việc, Ghế công thái học &bull; 3 Sản phẩm</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Row 2: View Switcher Tabs (Matching Image 1: List, Board, Timeline, Calendar, Progress) -->
-            <div class="header-nav-row">
-                <nav class="view-tabs" role="tablist">
-                    <button class="view-tab" data-view="list" id="tab-view-list">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                        <span>List</span>
-                    </button>
-                    <button class="view-tab active" data-view="board" id="tab-view-board">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="11" rx="1"></rect></svg>
-                        <span>Board</span>
-                    </button>
-                    <button class="view-tab" data-view="timeline" id="tab-view-timeline">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        <span>Timeline</span>
-                    </button>
-                    <button class="view-tab" data-view="calendar" id="tab-view-calendar">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        <span>Calendar</span>
-                    </button>
-                    <button class="view-tab" data-view="progress" id="tab-view-progress">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
-                        <span>Progress</span>
-                    </button>
-                </nav>
+    <!-- Main Product Catalog Section -->
+    <section class="catalog-section" id="catalog">
+        <div class="container">
+            <div class="catalog-header-bar">
+                <div>
+                    <h2 class="catalog-main-title">Sản Phẩm Tuyển Chọn</h2>
+                    <p class="catalog-count"><span id="product-count-display">0</span> món nội thất sẵn sàng giao ngay
+                    </p>
+                </div>
 
-                <div class="view-filters-actions">
-                    <button id="btn-toggle-completed" class="btn-filter" title="Ẩn/Hiện các việc đã hoàn thành">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        <span>Tất cả</span>
-                    </button>
-                    <button id="btn-reset-demo" class="btn-filter" title="Đặt lại dữ liệu mẫu gốc">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                        <span>Dữ liệu mẫu</span>
+                <!-- Filters & Sorting Controls -->
+                <div class="catalog-controls">
+                    <!-- Price Range Filter -->
+                    <div class="select-filter-wrap">
+                        <label for="filter-price">Mức giá:</label>
+                        <select id="filter-price" class="control-select">
+                            <option value="all">Tất cả mức giá</option>
+                            <option value="under-5m">Dưới 5.000.000₫</option>
+                            <option value="5m-15m">5.000.000₫ - 15.000.000₫</option>
+                            <option value="above-15m">Trên 15.000.000₫</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort Order -->
+                    <div class="select-filter-wrap">
+                        <label for="filter-sort">Sắp xếp:</label>
+                        <select id="filter-sort" class="control-select">
+                            <option value="featured">Nổi bật nhất</option>
+                            <option value="price-asc">Giá: Thấp đến Cao</option>
+                            <option value="price-desc">Giá: Cao đến Thấp</option>
+                            <option value="rating-desc">Đánh giá cao nhất</option>
+                        </select>
+                    </div>
+
+                    <!-- Admin Add Product Button (chỉ hiện khi đăng nhập tài khoản Admin) -->
+                    <button type="button" class="btn-admin-add-product" id="btn-admin-add-product" style="display: none;" title="Thêm món đồ nội thất mới">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                        + Thêm Món Mới
                     </button>
                 </div>
             </div>
-        </header>
 
-        <!-- PROJECT QUICK STATS SUMMARY BAR -->
-        <section class="project-summary-bar">
-            <div class="summary-stats-group">
-                <div class="stat-pill">
-                    <span>Tổng việc:</span>
-                    <strong id="stat-total">0</strong>
+            <!-- Active Filter Badges Bar -->
+            <div class="active-filter-tags" id="active-filter-tags" style="display: none;">
+                <span class="tag-label">Đang lọc theo:</span>
+                <span class="tag-badge" id="tag-category">Danh mục</span>
+                <span class="tag-badge" id="tag-price">Mức giá</span>
+                <button type="button" id="btn-reset-filters" class="btn-reset-filters">Xóa tất cả lọc</button>
+            </div>
+
+            <!-- Products Grid Container -->
+            <div class="products-grid" id="products-grid">
+                <!-- Products rendered via app.js -->
+            </div>
+
+            <!-- Empty Products State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">🛋️</div>
+                <h3>Không tìm thấy sản phẩm phù hợp</h3>
+                <p>Vui lòng thử đổi từ khóa tìm kiếm hoặc chọn mức giá khác.</p>
+                <button type="button" class="btn-primary" id="btn-clear-filters">Xem tất cả sản phẩm</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showroom & Consultation Banner -->
+    <section class="consult-banner">
+        <div class="container consult-container">
+            <div class="consult-text">
+                <span class="consult-tag">DỊCH VỤ THIẾT KẾ</span>
+                <h2>Cần tư vấn thiết kế nội thất trọn gói?</h2>
+                <p>Đội ngũ kiến trúc sư của BLANC' sẵn sàng khảo sát thực tế và lên phương án 3D may đo phù hợp với căn
+                    hộ của bạn hoàn toàn miễn phí.</p>
+            </div>
+            <div class="consult-action">
+                <a href="tel:19008866" class="btn-consult">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                        </path>
+                    </svg>
+                    Gọi 1900 8866 tư vấn ngay
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div class="footer-col brand-col">
+                <div class="brand-logo footer-logo">
+                    <span class="logo-mark">BLANC<span>'</span></span>
+                    <span class="logo-sub">LIVING</span>
                 </div>
-                <div class="stat-pill">
-                    <span style="color: #2563eb;">● Cần làm:</span>
-                    <strong id="stat-new">0</strong>
-                </div>
-                <div class="stat-pill">
-                    <span style="color: #d97706;">● Đang làm:</span>
-                    <strong id="stat-progress">0</strong>
-                </div>
-                <div class="stat-pill">
-                    <span style="color: #059669;">● Đã xong:</span>
-                    <strong id="stat-complete">0</strong>
+                <p class="footer-about">
+                    Thương hiệu nội thất phong cách Bắc Âu tối giản, kiến tạo những tổ ấm an yên, thẩm mỹ và bền vững
+                    qua năm tháng.
+                </p>
+                <div class="footer-contact-info">
+                    <p>📞 Hotline: 1900 8866 &bull; Email: cskh@blanc.vn</p>
                 </div>
             </div>
 
-            <div class="progress-summary">
-                <span>Tiến độ: <strong id="stat-percent-text">0%</strong></span>
-                <div class="progress-track">
-                    <div class="progress-fill" id="stat-percent-bar" style="width: 0%;"></div>
+            <div class="footer-col">
+                <h4>Về BLANC' LIVING</h4>
+                <ul>
+                    <li><a href="#hero">Câu chuyện thương hiệu</a></li>
+                    <li><a href="#room-showcase">Không gian sống mẫu</a></li>
+                    <li><a href="#catalog">Bộ sưu tập mới</a></li>
+                    <li><a href="#">Xưởng may đo đồ gỗ</a></li>
+                    <li><a href="#">Tuyển dụng</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Chính Sách & Hỗ Trợ</h4>
+                <ul>
+                    <li><a href="#">Chính sách bảo hành 24 tháng</a></li>
+                    <li><a href="#">Chính sách đổi trả trong 7 ngày</a></li>
+                    <li><a href="#">Vận chuyển & Lắp đặt tận nơi</a></li>
+                    <li><a href="#">Hướng dẫn bảo quản gỗ tự nhiên</a></li>
+                    <li><a href="#">Phương thức thanh toán & trả góp</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col newsletter-col">
+                <h4>Đăng Ký Nhận Bản Tin</h4>
+                <p>Nhận ngay voucher <strong>giảm 500.000₫</strong> cho đơn hàng nội thất đầu tiên của bạn.</p>
+                <form id="newsletter-form" class="newsletter-form"
+                    onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã đăng ký nhận bản tin BLANC\' LIVING!');">
+                    <input type="email" placeholder="Nhập địa chỉ email của bạn..." required>
+                    <button type="submit">Đăng Ký</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container footer-bottom-inner">
+                <p>&copy; 2026 BLANC' LIVING. Mọi quyền được bảo lưu. Nội thất tối giản đương đại.</p>
+                <div class="footer-payment-tags">
+                    <span>Thanh toán an toàn: COD &bull; Chuyển khoản QR &bull; Visa / Master</span>
                 </div>
             </div>
-        </section>
+        </div>
+    </footer>
 
-        <!-- MAIN WORKSPACE VIEWS -->
-        <main class="main-content">
+    <!-- =========================================================================
+         MODALS & DRAWERS
+         ========================================================================= -->
 
-            <!-- 1. BOARD VIEW (Kanban - Star of the Show!) -->
-            <section id="view-board" class="board-container">
-
-                <!-- Column 1: New Requests -->
-                <div class="kanban-column" data-column="new" id="col-new">
-                    <div class="column-header">
-                        <div class="column-header-left">
-                            <span class="column-title">
-                                New Requests
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </span>
-                            <span class="column-count" id="count-new">0</span>
-                        </div>
-                        <div class="column-header-actions">
-                            <button class="btn-col-action btn-col-add-top" onclick="quickAddPrompt('new')" title="Thêm việc vào New Requests">+</button>
-                            <button class="btn-col-action" title="Tùy chọn cột">•••</button>
-                        </div>
-                    </div>
-
-                    <div class="column-cards-list" id="cards-new" data-column="new">
-                        <!-- Dynamic Cards Injected Here -->
-                    </div>
-                    <div class="column-empty-placeholder">Thả thẻ vào đây</div>
-
-                    <div class="column-footer">
-                        <button class="btn-add-card-bottom" onclick="quickAddPrompt('new')">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span>Thêm thẻ mới...</span>
-                        </button>
-                    </div>
+    <!-- 1. Cart Slide Drawer -->
+    <div class="drawer-overlay" id="cart-drawer-overlay">
+        <div class="cart-drawer" id="cart-drawer">
+            <div class="drawer-header">
+                <div class="drawer-title-box">
+                    <h3>Giỏ hàng của bạn</h3>
+                    <span class="cart-count-text" id="cart-drawer-count">(0 sản phẩm)</span>
                 </div>
+                <button type="button" class="btn-close-drawer" id="btn-close-cart">&times;</button>
+            </div>
 
-                <!-- Column 2: In Progress -->
-                <div class="kanban-column" data-column="in_progress" id="col-in_progress">
-                    <div class="column-header">
-                        <div class="column-header-left">
-                            <span class="column-title">
-                                In Progress
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </span>
-                            <span class="column-count" id="count-in_progress">0</span>
-                        </div>
-                        <div class="column-header-actions">
-                            <button class="btn-col-action btn-col-add-top" onclick="quickAddPrompt('in_progress')" title="Thêm việc vào In Progress">+</button>
-                            <button class="btn-col-action" title="Tùy chọn cột">•••</button>
-                        </div>
-                    </div>
+            <div class="drawer-body" id="cart-drawer-body">
+                <!-- Cart items rendered via app.js -->
+            </div>
 
-                    <div class="column-cards-list" id="cards-in_progress" data-column="in_progress">
-                        <!-- Dynamic Cards Injected Here -->
-                    </div>
-                    <div class="column-empty-placeholder">Thả thẻ vào đây</div>
-
-                    <div class="column-footer">
-                        <button class="btn-add-card-bottom" onclick="quickAddPrompt('in_progress')">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span>Thêm thẻ mới...</span>
-                        </button>
-                    </div>
+            <div class="drawer-footer" id="cart-drawer-footer">
+                <div class="summary-line">
+                    <span>Tạm tính:</span>
+                    <strong class="subtotal-amount" id="cart-subtotal">0₫</strong>
                 </div>
-
-                <!-- Column 3: Complete -->
-                <div class="kanban-column" data-column="complete" id="col-complete">
-                    <div class="column-header">
-                        <div class="column-header-left">
-                            <span class="column-title">
-                                Complete
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </span>
-                            <span class="column-count" id="count-complete">0</span>
-                        </div>
-                        <div class="column-header-actions">
-                            <button class="btn-col-action btn-col-add-top" onclick="quickAddPrompt('complete')" title="Thêm việc vào Complete">+</button>
-                            <button class="btn-col-action" title="Tùy chọn cột">•••</button>
-                        </div>
-                    </div>
-
-                    <div class="column-cards-list" id="cards-complete" data-column="complete">
-                        <!-- Dynamic Cards Injected Here -->
-                    </div>
-                    <div class="column-empty-placeholder">Thả thẻ vào đây</div>
-
-                    <div class="column-footer">
-                        <button class="btn-add-card-bottom" onclick="quickAddPrompt('complete')">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span>Thêm thẻ mới...</span>
-                        </button>
-                    </div>
+                <div class="summary-line text-muted">
+                    <span>Phí vận chuyển:</span>
+                    <span class="free-shipping">Miễn phí giao hàng</span>
                 </div>
-
-                <!-- Column 4: Reference -->
-                <div class="kanban-column" data-column="reference" id="col-reference">
-                    <div class="column-header">
-                        <div class="column-header-left">
-                            <span class="column-title">
-                                Reference
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </span>
-                            <span class="column-count" id="count-reference">0</span>
-                        </div>
-                        <div class="column-header-actions">
-                            <button class="btn-col-action btn-col-add-top" onclick="quickAddPrompt('reference')" title="Thêm việc vào Reference">+</button>
-                            <button class="btn-col-action" title="Tùy chọn cột">•••</button>
-                        </div>
-                    </div>
-
-                    <div class="column-cards-list" id="cards-reference" data-column="reference">
-                        <!-- Dynamic Cards Injected Here -->
-                    </div>
-                    <div class="column-empty-placeholder">Thả thẻ vào đây</div>
-
-                    <div class="column-footer">
-                        <button class="btn-add-card-bottom" onclick="quickAddPrompt('reference')">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span>Thêm thẻ mới...</span>
-                        </button>
-                    </div>
+                <div class="divider"></div>
+                <div class="summary-line total-line">
+                    <span>Tổng thanh toán:</span>
+                    <strong class="total-amount" id="cart-total">0₫</strong>
                 </div>
-
-            </section>
-
-            <!-- 2. LIST VIEW (Detailed Table) -->
-            <section id="view-list" class="list-view-container">
-                <table class="list-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;"></th>
-                            <th>Tiêu đề công việc</th>
-                            <th>Cột / Trạng thái</th>
-                            <th>Hạn chót</th>
-                            <th>Người phụ trách</th>
-                            <th>Checklist</th>
-                            <th style="text-align: right;">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="list-table-body">
-                        <!-- Rendered dynamically -->
-                    </tbody>
-                </table>
-            </section>
-
-            <!-- 3. CALENDAR VIEW -->
-            <section id="view-calendar" class="calendar-view-container">
-                <div class="calendar-header">
-                    <h3 id="calendar-month-title">Tháng hiện tại</h3>
-                    <span class="pill-badge">Lịch tiến độ</span>
-                </div>
-                <div class="calendar-grid" id="calendar-grid">
-                    <!-- Dynamic Calendar Grid Cells -->
-                </div>
-            </section>
-
-            <!-- 4. PROGRESS VIEW -->
-            <section id="view-progress" class="progress-view-container">
-                <div class="metrics-cards-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon-box metric-blue">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="11" rx="1"></rect></svg>
-                        </div>
-                        <div class="metric-info">
-                            <h4>Tổng số nhiệm vụ</h4>
-                            <div class="metric-num" id="metric-total">0</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon-box metric-amber">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        </div>
-                        <div class="metric-info">
-                            <h4>Đang triển khai</h4>
-                            <div class="metric-num" id="metric-in-progress">0</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon-box metric-green">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                        <div class="metric-info">
-                            <h4>Đã hoàn thành</h4>
-                            <div class="metric-num" id="metric-done">0</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon-box metric-purple">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        </div>
-                        <div class="metric-info">
-                            <h4>Tài liệu & Tham khảo</h4>
-                            <div class="metric-num" id="metric-reference">0</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
+                <button type="button" class="btn-primary btn-block" id="btn-checkout-from-cart">
+                    Tiến Hành Đặt Hàng
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- ==============================================================================
-         MODALS & DIALOGS
-         ============================================================================== -->
-
-    <!-- CREATE / EDIT TASK MODAL -->
-    <dialog id="modal-task" class="app-dialog">
-        <div class="dialog-box">
-            <div class="dialog-header">
-                <h3 id="modal-task-title">Thêm công việc mới</h3>
-                <button type="button" class="dialog-close-btn" id="btn-close-task-modal">✕</button>
+    <!-- 2. Product Detail Quick-View Modal -->
+    <div class="modal-overlay" id="product-modal-overlay">
+        <div class="modal-dialog product-modal" id="product-modal">
+            <button type="button" class="modal-close" id="btn-close-product-modal">&times;</button>
+            <div class="product-modal-content" id="product-modal-content">
+                <!-- Content dynamically injected via app.js -->
             </div>
-            <form id="form-task">
-                <input type="hidden" id="task-id">
-                <div class="dialog-body">
-                    <!-- Title -->
+        </div>
+    </div>
+
+    <!-- 3. Checkout Modal -->
+    <div class="modal-overlay" id="checkout-modal-overlay">
+        <div class="modal-dialog checkout-modal" id="checkout-modal">
+            <button type="button" class="modal-close" id="btn-close-checkout">&times;</button>
+            <div class="checkout-header">
+                <h3>Xác Nhận Đơn Hàng Nội Thất</h3>
+                <p>Vui lòng điền thông tin để BLANC' liên hệ sắp xếp lịch giao & lắp đặt.</p>
+            </div>
+
+            <form id="form-checkout" class="checkout-form">
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="task-title-input">Tiêu đề công việc *</label>
-                        <input type="text" id="task-title-input" class="form-control" placeholder="vd: Social media assets, Homepage update..." required autocomplete="off">
+                        <label for="checkout-name">Họ và tên người nhận <span class="req">*</span></label>
+                        <input type="text" id="checkout-name" placeholder="Nguyễn Văn An" required>
                     </div>
-
-                    <!-- Column / Status & Color Stripe -->
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label for="task-column-select">Cột quản lý</label>
-                            <select id="task-column-select" class="form-control">
-                                <option value="new">New Requests (Cần làm)</option>
-                                <option value="in_progress">In Progress (Đang làm)</option>
-                                <option value="complete">Complete (Hoàn thành)</option>
-                                <option value="reference">Reference (Tài liệu)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Dải màu nhận diện (Tag Color)</label>
-                            <div class="tag-colors-selector">
-                                <div class="color-radio-opt selected" style="background: #3b82f6;" data-color="blue" title="Xanh dương"></div>
-                                <div class="color-radio-opt" style="background: #06b6d4;" data-color="cyan" title="Xanh ngọc"></div>
-                                <div class="color-radio-opt" style="background: #f43f5e;" data-color="pink" title="Hồng đào"></div>
-                                <div class="color-radio-opt" style="background: #8b5cf6;" data-color="purple" title="Tím"></div>
-                                <div class="color-radio-opt" style="background: #f59e0b;" data-color="amber" title="Vàng cam"></div>
-                                <div class="color-radio-opt" style="background: #10b981;" data-color="green" title="Xanh lá"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Assignee & Due Date -->
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label for="task-assignee-select">Người phụ trách</label>
-                            <select id="task-assignee-select" class="form-control">
-                                <option value="Alex">Alex (Lead Designer)</option>
-                                <option value="Sarah">Sarah (UI Specialist)</option>
-                                <option value="David">David (Product Manager)</option>
-                                <option value="Emma">Emma (Illustrator)</option>
-                                <option value="Me">Tôi (Người dùng hiện tại)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="task-duedate-input">Hạn chót (Due Date)</label>
-                            <input type="text" id="task-duedate-input" class="form-control" placeholder="vd: Hôm nay, Monday, Aug 4-7...">
-                        </div>
-                    </div>
-
-                    <!-- Description -->
                     <div class="form-group">
-                        <label for="task-desc-input">Mô tả công việc</label>
-                        <textarea id="task-desc-input" class="form-control" rows="2" placeholder="Ghi chú chi tiết, yêu cầu hoặc đường dẫn tài nguyên..."></textarea>
+                        <label for="checkout-phone">Số điện thoại liên hệ <span class="req">*</span></label>
+                        <input type="tel" id="checkout-phone" placeholder="0901 234 567" required>
                     </div>
-
-                    <!-- Cover Art Selector -->
-                    <div class="form-group">
-                        <label>Ảnh bìa minh họa (Cover Art)</label>
-                        <div class="cover-options-grid">
-                            <div class="cover-opt selected" data-cover="none" title="Không có ảnh bìa" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#64748b;">Không ảnh</div>
-                            <div class="cover-opt" data-cover="mountain" title="Cảnh hoàng hôn đồi núi">
-                                <svg viewBox="0 0 100 50" style="width:100%;height:100%;"><rect width="100" height="50" fill="#f8fafc"/><circle cx="70" cy="22" r="10" fill="#fbbf24"/><path d="M0 50 L35 25 L65 50" fill="#3b82f6"/><path d="M45 50 L75 28 L100 50" fill="#1d4ed8"/></svg>
-                            </div>
-                            <div class="cover-opt" data-cover="airplane" title="Máy bay giấy Origami">
-                                <svg viewBox="0 0 100 50" style="width:100%;height:100%;"><rect width="100" height="50" fill="#f0f9ff"/><polygon points="20,38 75,18 45,45" fill="#60a5fa"/><polygon points="75,18 40,30 45,45" fill="#f43f5e"/></svg>
-                            </div>
-                            <div class="cover-opt" data-cover="emojis" title="Mặt cười 3D vui tươi">
-                                <svg viewBox="0 0 100 50" style="width:100%;height:100%;"><rect width="100" height="50" fill="#6366f1"/><circle cx="28" cy="25" r="9" fill="#38bdf8"/><circle cx="50" cy="25" r="9" fill="#f43f5e"/><circle cx="72" cy="25" r="9" fill="#a855f7"/></svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Checklist / Subtasks preview -->
-                    <div class="form-group">
-                        <label for="task-checklist-input">Checklist nhiệm vụ (cách nhau bởi dấu phẩy)</label>
-                        <input type="text" id="task-checklist-input" class="form-control" placeholder="vd: Lên bản nháp, Duyệt màu, Xuất file SVG (4/10)">
-                    </div>
-
                 </div>
-                <div class="dialog-footer">
-                    <button type="button" class="btn-secondary" id="btn-cancel-task">Hủy</button>
-                    <button type="submit" class="btn-primary" id="btn-save-task">Lưu công việc</button>
+
+                <div class="form-group">
+                    <label for="checkout-address">Địa chỉ nhận hàng (Số nhà, đường, phường, quận) <span
+                            class="req">*</span></label>
+                    <input type="text" id="checkout-address"
+                        placeholder="Tòa S2.05 Vinhome Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="checkout-notes">Ghi chú giao & lắp đặt (Ví dụ: Thang máy, giờ giao thuận tiện)</label>
+                    <textarea id="checkout-notes" rows="2"
+                        placeholder="Giao trong giờ hành chính, căn hộ có thang máy chở hàng..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Phương thức thanh toán</label>
+                    <div class="payment-methods">
+                        <label class="radio-label">
+                            <input type="radio" name="payment_method" value="cod" checked>
+                            <div class="radio-box">
+                                <strong>Thanh toán khi nhận hàng (COD)</strong>
+                                <small>Kiểm tra kỹ lưỡng đồ nội thất trước khi thanh toán</small>
+                            </div>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="payment_method" value="bank_transfer">
+                            <div class="radio-box">
+                                <strong>Chuyển khoản qua ngân hàng (QR Code)</strong>
+                                <small>Nhận thông tin tài khoản công ty và mã đơn sau khi đặt</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="checkout-order-summary">
+                    <div class="summary-line">
+                        <span>Số lượng sản phẩm:</span>
+                        <strong id="checkout-items-count">0 món</strong>
+                    </div>
+                    <div class="summary-line total-line">
+                        <span>Tổng tiền cần thanh toán:</span>
+                        <strong class="total-amount" id="checkout-total-amount">0₫</strong>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block" id="btn-submit-order">
+                    Xác Nhận Đặt Hàng Ngay
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Order Success Modal -->
+    <div class="modal-overlay" id="success-modal-overlay">
+        <div class="modal-dialog success-modal">
+            <div class="success-icon">✓</div>
+            <h3>Đặt Hàng Thành Công!</h3>
+            <p>Cảm ơn bạn đã lựa chọn <strong>BLANC' LIVING</strong>. Đơn hàng của bạn đã được ghi nhận.</p>
+            <div class="order-code-box">
+                <span>Mã đơn hàng:</span>
+                <strong id="success-order-code">BLC-8829</strong>
+            </div>
+            <p class="order-notice">Chuyên viên tư vấn sẽ liên hệ qua số điện thoại của bạn trong vòng 30 phút để xác
+                nhận lịch giao hàng & hỗ trợ lắp đặt tận nơi.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-outline" id="btn-view-order-history">Xem lịch sử đơn mua</button>
+                <button type="button" class="btn-primary" id="btn-close-success">Tiếp tục mua sắm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Order History Modal -->
+    <div class="modal-overlay" id="orders-modal-overlay">
+        <div class="modal-dialog orders-modal">
+            <button type="button" class="modal-close" id="btn-close-orders">&times;</button>
+            <div class="orders-modal-header">
+                <h3>Lịch Sử Đơn Mua Nội Thất</h3>
+                <p>Theo dõi tiến trình xử lý và giao hàng các đơn của bạn</p>
+            </div>
+            <div class="orders-list" id="orders-list-container">
+                <!-- Orders dynamically injected via app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Auth Modal (Login / Register) -->
+    <div class="modal-overlay" id="auth-modal-overlay">
+        <div class="modal-dialog auth-modal">
+            <button type="button" class="modal-close" id="btn-close-auth">&times;</button>
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn active" id="tab-login">Đăng Nhập</button>
+                <button type="button" class="auth-tab-btn" id="tab-register">Đăng Ký Mới</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="form-auth-login" class="auth-modal-form">
+                <div class="form-group">
+                    <label for="login-email">Địa chỉ Email</label>
+                    <input type="email" id="login-email" placeholder="tenban@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mật khẩu</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary btn-block">Đăng Nhập</button>
+                <div class="demo-account-hint" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="btn-outline btn-block" id="btn-quick-admin-login" style="border-color: #8c6d58; color: #8c6d58; font-weight: 600; padding: 10px; font-size: 0.85rem;">
+                        👑 Đăng Nhập Nhanh Quyền Admin (Demo)
+                    </button>
+                    <small style="text-align: center; color: var(--text-muted);">
+                        Admin mặc định: <em>admin@blanc.vn</em> / <em>admin123</em>
+                    </small>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-auth-register" class="auth-modal-form" style="display: none;">
+                <div class="form-group">
+                    <label for="reg-username">Tên người dùng (Username)</label>
+                    <input type="text" id="reg-username" placeholder="nguyenvan_a" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-name">Họ và tên của bạn</label>
+                    <input type="text" id="reg-name" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Địa chỉ Email</label>
+                    <input type="email" id="reg-email" placeholder="tenban@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Mật khẩu</label>
+                    <input type="password" id="reg-password" placeholder="Ít nhất 6 ký tự" required minlength="6">
+                </div>
+                <button type="submit" class="btn-primary btn-block">Tạo Tài Khoản</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. Admin Product Modal (Thêm & Chỉnh Sửa Món Hàng) -->
+    <div class="modal-overlay" id="admin-product-modal-overlay">
+        <div class="modal-dialog admin-product-modal" style="max-width: 620px;">
+            <button type="button" class="modal-close" id="btn-close-admin-modal">&times;</button>
+            <div class="admin-modal-header" style="margin-bottom: 20px;">
+                <span class="admin-badge-pill" style="display: inline-block; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; background: #eedfd3; color: #8c6d58; padding: 4px 10px; border-radius: 20px; font-weight: 700; margin-bottom: 8px;">QUẢN TRỊ VIÊN SHOWROOM</span>
+                <h3 id="admin-modal-title" style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--text-primary); margin-bottom: 4px;">Thêm Món Đồ Nội Thất Mới</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Điều chỉnh thông tin, giá bán và hình ảnh sản phẩm trưng bày</p>
+            </div>
+            <form id="form-admin-product" class="admin-product-form">
+                <input type="hidden" id="admin-prod-id" value="">
+                
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="admin-prod-name">Tên sản phẩm *</label>
+                        <input type="text" id="admin-prod-name" placeholder="Ví dụ: Sofa Modular Blanc Soft L-Shape" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-prod-category">Danh mục phòng *</label>
+                        <select id="admin-prod-category" required>
+                            <option value="1">Phòng Khách</option>
+                            <option value="2">Bàn Ăn & Bếp</option>
+                            <option value="3">Phòng Ngủ</option>
+                            <option value="4">Góc Làm Việc</option>
+                            <option value="5">Đèn & Decor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="admin-prod-price">Giá bán hiện tại (VNĐ) *</label>
+                        <input type="number" id="admin-prod-price" placeholder="16800000" min="0" step="50000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-prod-orig-price">Giá gốc niêm yết (VNĐ - nếu có)</label>
+                        <input type="number" id="admin-prod-orig-price" placeholder="19500000" min="0" step="50000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-prod-image">Đường dẫn hình ảnh (URL Unsplash hoặc Web) *</label>
+                    <input type="url" id="admin-prod-image" placeholder="https://images.unsplash.com/..." required>
+                    <div class="admin-img-preview-box" id="admin-img-preview-box" style="display: none; margin-top: 8px;">
+                        <img id="admin-img-preview" src="" alt="Xem trước ảnh" style="max-height: 100px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border-color);">
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="admin-prod-material">Chất liệu</label>
+                        <input type="text" id="admin-prod-material" placeholder="Ví dụ: Gỗ Sồi Bắc Mỹ tự nhiên">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-prod-dimensions">Kích thước</label>
+                        <input type="text" id="admin-prod-dimensions" placeholder="Ví dụ: 180 x 85 x 75 cm">
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="admin-prod-badge">Nhãn sản phẩm (Badge)</label>
+                        <input type="text" id="admin-prod-badge" placeholder="Best Seller, Mới, Ưu Đãi...">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-prod-badge-type">Màu sắc nhãn</label>
+                        <select id="admin-prod-badge-type">
+                            <option value="featured">Màu vàng cát (Đặc tuyển/Best Seller)</option>
+                            <option value="new">Màu xanh rêu (Mới về)</option>
+                            <option value="discount">Màu đỏ gạch (Ưu đãi/Hot Deal)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-prod-desc">Mô tả sản phẩm</label>
+                    <textarea id="admin-prod-desc" rows="3" placeholder="Mô tả phong cách, công năng và điểm nhấn thiết kế..."></textarea>
+                </div>
+
+                <div class="admin-form-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn-outline" id="btn-cancel-admin-modal">Hủy bỏ</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-admin-product">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Lưu Sản Phẩm
+                    </button>
                 </div>
             </form>
         </div>
-    </dialog>
+    </div>
 
-    <!-- DELETE CONFIRMATION DIALOG -->
-    <dialog id="modal-delete" class="app-dialog">
-        <div class="dialog-box">
-            <div class="dialog-header">
-                <h3 style="color: #ef4444;">Xóa công việc</h3>
-                <button type="button" class="dialog-close-btn" id="btn-close-delete-modal">✕</button>
-            </div>
-            <div class="dialog-body">
-                <p>Bạn có chắc chắn muốn xóa vĩnh viễn thẻ này không?</p>
-                <div id="delete-task-preview" style="background:#f1f5f9;padding:0.75rem;border-radius:8px;font-weight:600;color:#0f172a;"></div>
-            </div>
-            <div class="dialog-footer">
-                <button type="button" class="btn-secondary" id="btn-cancel-delete">Giữ lại</button>
-                <button type="button" class="btn-danger" id="btn-confirm-delete">Xác nhận xóa</button>
-            </div>
-        </div>
-    </dialog>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
-    <!-- Script File -->
+    <!-- Scripts -->
     <script src="app.js"></script>
 </body>
+
 </html>
