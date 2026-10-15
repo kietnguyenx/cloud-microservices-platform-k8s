@@ -1,0 +1,54 @@
+#Tạo tên miền nội bộ cho Database
+apiVersion: v1
+kind: Service
+metadata:
+  name:postgres
+spec:
+  port: 
+    -port: 5432
+    targetPort: 5432
+  clusterIP: None #healess service - bắt buộc phải có khi đi kèm với StatefulSet
+  selector:
+    app: postgres
+
+---
+
+#Khởi chạy database kèm ổ cứng lưu trữ bền vững
+apiVersion: app/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: "postgres" #liên kết trực tiếp với service tên postgre ở file backend-config-secret.yaml
+  replicas: 1 #Chạy 1 bản (1Pod) 
+  selector:
+    matchLabels:
+      app: postgres #quản lý các 'app: postgre' cho Pod khi được tạo ra
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine  
+          ports:
+            - containerPort: 5432 #mở cổng 5432 của container
+          env: #Tạo tài khoản và tên database mặc định lúc mới khởi chạy
+            - name: POSTGRES_USER
+              value: todo_user
+            - name: POSTGRES_PASSWORD
+              value: todo_password
+            - name: POSTGRES_DB
+              value: todo_db
+          volumeMounts: #Cắm ổ cứng vào bên trong container
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates: #Lệnh yêu cầu K8s cấp phát ổ cứng lưu trữ bền vững (PVC)
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: ["ReadWriteOnce"] #Cho phép 1 Node được quyền Đọc và Ghi vào ổ cứng này
+        resources:
+          requests:
+            storage: 1Gi #Yêu cầu cấp phát dung lượng 1Gb

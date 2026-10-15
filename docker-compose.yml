@@ -14,16 +14,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg-isready -U todo  -d todo " ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - todo_network
 
   # 2. Hàng đợi tin nhắn Redis
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: todo-redis
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - todo_network
 
@@ -43,8 +54,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - todo_network
 
@@ -59,8 +72,10 @@ services:
       DATABASE_URL: postgresql://todo_user:todo_password@postgres:5432/todo_db
       REDIS_URL: redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - todo_network
 

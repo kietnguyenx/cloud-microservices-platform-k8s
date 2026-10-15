@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: default
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s # Thu thập số liệu mỗi 15s
+      evaluation_interval: 15s # Kiểm tra alert mỗi 15s
+    
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager-service:9093']
+
+    rule_files:
+      - /etc/prometheus/alert-rules.yml
+    
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      
+      - job_name: 'backend-service'
+        metrics_path: '/metrics' 
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: backend-service
+
+  alert-rules.yml: |
+    groups:
+      - name: microservices-alert 
+        rules:
+          - alert: HighHttpErrorRate
+            expr: sum(rate(http_requests_total{code=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) * 100 > 5
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Tỷ lệ lỗi HTTP 5xx vượt quá 5%"
+              description: "Backend đang gặp sự cố với tỷ lệ lỗi server cao bất thường!"
+      
+          - alert: PodDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Instance/Pod bị mất kết nối!" 
+              description: "Target không phản hồi trong hơn 1 phút."

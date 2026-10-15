@@ -1,0 +1,43 @@
+# DEPLOYMENT (chạy các Pod chứa Nginx và giao diện web)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 2 #chạy song song 2 Pod để dự phòng và chia tải
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ryannguyxn/todo-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+
+---
+# SERVICE (mở kết nối ra ngoài cụm k8s bằng NodePort)
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  type: NodePort # Mở một cổng trực tiếp trên máy chủ để bạn truy cập được từ trình duyệt
+  ports:
+    - port: 80 # Cổng trong cụm K8s
+      targetPort: 80 # Chuyển tiếp vào cổng 80 của container Nginx
+      nodePort: 30080 # cổng mở ra ngoài máy thật (30000 - 32767)

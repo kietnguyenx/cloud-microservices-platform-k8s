@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: default
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'severity']
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 1h
+      receiver: 'default-receiver'
+
+    receivers:
+      - name: 'default-receiver'
+#Trong môi trường lab/test, giữ cấu hình receiver rỗng hoặc định tuyến webhook

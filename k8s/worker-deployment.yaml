@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: ryannguyxn/todo-worker:latest #sử dụng image worker
+          imagePullPolicy: IfNotPresent #Nếu máy đã có sẵn image thì dùng luôn, không tải lại
+          envFrom: #Nạp toàn bộ biến môi trường từ File số 1(ConfigsMap & Secret)
+            - configMapRef:
+              name: backend-config
+            - secretRef:
+              name: backend-secret
+            
+          

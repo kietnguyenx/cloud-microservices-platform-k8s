@@ -1,0 +1,46 @@
+#Khởi chạy các Pod chứa ứng dụng FastAPI
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 2 #chạy 2 bản(2 Pod) để chịu tải và chống sập
+  selector:
+    matchLabels:
+      app: backend #Tìm và quản lý các Pod có dán nhãn 'app: backend'
+  template:
+    metadata:
+      labels:
+        app: backend #Dán nhãn 'app: backend' cho Pod
+    spec:
+      containers:
+        -name: backend
+        image: ryannguyxn/todo-api:v1 #sử dụng image todo-api:v1
+        imagePullPolicy: IfNotPresent #Nếu máy đã có sẵn image thì dùng luôn, không tải lại
+        ports:
+          - containerPort: 8000 #mở cổng mà FastApi(Uvicorn) của container đang lắng nghe
+        envFrom: #Nạp toàn bộ biến môi trường từ File số 1(ConfigsMap & Secret)
+          - configMapRef:
+            name: backend-config #Nạp toàn bộ biến từ file ConfigsMap
+          - secretRef:
+            name: backend-secret #Nạp toàn bộ biến từ file Secret
+        resources:
+          requests:
+            cpu: "100m" #Mức tối thiểu cần cấp lúc chạy: 0.1 nhân CPU
+            memory: "128Mi" #Ram tối thiểu
+          limits:
+            cpu: "500m" #Mức tối đa được phép dùng: 0.5 CPU
+            memory: "256Mi" #Ram tối đa
+
+---
+#Tạo tên miền nội bộ cho 'backend' và chia tải cho 2 Pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: backend

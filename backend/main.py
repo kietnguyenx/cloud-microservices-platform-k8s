@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
 from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
@@ -74,6 +75,9 @@ app.add_middleware(
 # Nạp Auth Router
 app.include_router(auth_router)
 app.include_router(auth_router, prefix="/api", include_in_schema=False)
+
+# Cấu hình Prometheus Metrics (/metrics)
+Instrumentator().instrument(app).expose(app, tags=["Monitoring"])
 
 
 # =============================================================================

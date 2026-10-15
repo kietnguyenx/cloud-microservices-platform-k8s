@@ -1,0 +1,20 @@
+# TỰ ĐỘNG TĂNG GIẢM POD KHI TẢI THAY ĐỔI
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend # Áp dụng cho deployment backend
+  minReplicas: 2 # Số Pod tối thiểu duy trì hệ thống
+  maxReplicas: 10 # Số Pod tối đa được phép tăng lên khi tải tăng cao
+  metrics: # Thiết lập ngưỡng đo lường
+    - type: Resource # Dựa trên tài nguyên (CPU/Memory)
+      resource:
+        name: cpu
+        target:
+          type: Utilization # Sử dụng theo % tải
+          averageUtilization: 70 # Khi backend dùng hết 70% CPU → K8s tự động tạo thêm Pod
+

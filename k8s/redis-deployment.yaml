@@ -1,0 +1,33 @@
+#Khởi chạy Pod chứa phần mềm Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1 #chạy 1 bản(1 Pod) Redis
+  selector:
+    matchLabels:
+      app: redis #Tìm và quản lý các pod có dán nhãn 'app: redis'
+  template:
+    metadata:
+      labels:
+        app: redis #Dán nhãn 'app: redis' cho Pod
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine #chạy redis 7-alpine
+          ports:
+            - containerPort: 6379 #mở cổng 6379 của container
+---
+#Tạo tên miền mạng nội bộ cho Redis
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis #Tạo tên miền nội bộ cho Redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
+    
