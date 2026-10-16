@@ -29,16 +29,32 @@ spec:
           resources:
             requests:
               memory: "128Mi"
-              cpu: "100m0m"
+              cpu: "100m"
             limits:
               memory: "256Mi"
               cpu: "300m"
           volumeMounts:
             - name: grafana-storage
               mountPath: /var/lib/grafana
+            - name: grafana-datasources-volume
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: grafana-dashboards-provider-volume
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: grafana-dashboard-json-volume
+              mountPath: /var/lib/grafana/dashboards
       volumes:
         - name: grafana-storage
           emptyDir: {}
+        - name: grafana-datasources-volume
+          configMap:
+            name: grafana-datasources
+        - name: grafana-dashboards-provider-volume
+          configMap:
+            name: grafana-dashboards-provider
+        - name: grafana-dashboard-json-volume
+          configMap:
+            name: grafana-microservices-dashboard
+
 ---
 apiVersion: v1
 kind: Service

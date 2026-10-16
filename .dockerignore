@@ -1,0 +1,43 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments & Secrets
+.env
+*.env
+.env.*
+venv/
+.venv/
+env/
+ENV/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Tests & Load testing
+tests/
+backend/tests/
+load-test/
+
+# Local databases & logs
+*.db
+*.sqlite3
+*.log
+
+# Documentation
+*.md

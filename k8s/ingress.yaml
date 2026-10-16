@@ -2,31 +2,26 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: todo-ingress
-  annotations:
-    # Bật rewrite-target để khi gọi /api/auth thì chuyển sang Backend thành /auth
-    nginx.ingress.kubernetes.io/rewrite-target: /  # Xử lý rewrite URL
-    nginx.ingress.kubernetes.io/user-regex: "true"
 spec:
   ingressClassName: nginx
   rules:  
     - host: todo.local
       http:
         paths:
-        #Nhánh 1: Route API gọi thẳng tới Backend
-        - path: /api(/|$)(.*)
-          pathType: ImplementationSpecific
-          backend:
-            service:
-              name: backend
-              port:
-                number: 8000
-        
-        #Nhánh 2: Route Frontend gọi tới Service Frontend
-        - path: /()|/(.*)
-          pathType: ImplementationSpecific
-          backend:
-            service:
-              name: frontend
-              port:
-                number: 80
-      
+          # Nhánh 1: Route API gọi thẳng tới Backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+          
+          # Nhánh 2: Route Frontend gọi tới Service Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

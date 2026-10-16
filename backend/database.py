@@ -23,8 +23,8 @@ if os.path.exists(env_file_path):
 
 class Settings:
     POSTGRES_URL: str = os.getenv("POSTGRES_URL", os.getenv("DATABASE_URL", env_vars.get("POSTGRES_URL", "sqlite:///./furniture.db")))
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", env_vars.get("JWT_SECRET_KEY", "super-secret-jwt-key-for-furniture-api-development"))
-    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", env_vars.get("JWT_ALGORITHM", "HS256"))
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", env_vars.get("JWT_SECRET_KEY", env_vars.get("SECRET_KEY", "super-secret-jwt-key-for-furniture-api-development"))))
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", os.getenv("ALGORITHM", env_vars.get("JWT_ALGORITHM", env_vars.get("ALGORITHM", "HS256"))))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", env_vars.get("ACCESS_TOKEN_EXPIRE_MINUTES", "4320")))
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", env_vars.get("CORS_ORIGINS", "*"))
     HOST: str = os.getenv("HOST", env_vars.get("HOST", "0.0.0.0"))

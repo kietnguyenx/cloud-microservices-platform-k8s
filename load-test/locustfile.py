@@ -1,38 +1,71 @@
-from locust import HttpUser, task, between
 import random
+from locust import HttpUser, task, between
 
-class WebAppUser(HttpUser):
-    # Thời gian nghỉ ngơi ngẫu nhiên giữa các request của mỗi user ảo (1 - 3 giây)
-    wait_time = between(1, 3)
+
+class MicroservicesLoadTestUser(HttpUser):
+    """
+    Kịch bản kiểm thử tải (Load Testing) cho nền tảng Microservices.
+    Mục đích:
+    1. Tạo tải thực tế lên hệ thống để kích hoạt Horizontal Pod Autoscaler (HPA co giãn từ 2 -> 10 Pods).
+    2. Cung cấp lưu lượng request thực tế để hiển thị số liệu trực quan trên Grafana Dashboard.
+    """
+    # Thời gian nghỉ giữa các tác vụ của user ảo (0.5 - 2 giây)
+    wait_time = between(0.5, 2.0)
 
     def on_start(self):
-        """Hàm chạy đầu tiên khi 1 user ảo được sinh ra (dùng để login lấy token nếu có)"""
-        self.client.headers = {"Content-Type": "application/json"}
-        # Giả lập hoặc gọi endpoint đăng nhập nếu cần
-        # res = self.client.post("/auth/login", json={"username": "testuser", "password": "password123"})
-        # if res.status_code == 200:
-        #     token = res.json().get("access_token")
-        #     self.client.headers["Authorization"] = f"Bearer {token}"
-
-    @task(3)
-    def view_list(self):
-        """Tác vụ đọc danh sách (chiếm tỷ lệ cao: trọng số 3)"""
-        # Gọi thử endpoint danh sách (hoặc /docs /metrics để test tải ban đầu)
-        self.client.get("/docs", name="Xem Swagger Docs")
-        # Khi có API Todo/Product hoàn chỉnh, đổi thành:
-        # self.client.get("/todos", name="Lấy danh sách Todos")
-
-    @task(1)
-    def create_item(self):
-        """Tác vụ thêm mới (chiếm tỷ lệ thấp hơn: trọng số 1)"""
-        payload = {
-            "title": f"Công việc test tải số {random.randint(1, 1000)}",
-            "description": "Nội dung kiểm thử tải Locust",
-            "completed": False
+        """Khởi tạo headers cho mỗi người dùng ảo."""
+        self.client.headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
-        # self.client.post("/todos", json=payload, name="Tạo Todo mới")
+
+    @task(6)
+    def browse_products(self):
+        """
+        Tác vụ xem danh sách sản phẩm & tìm kiếm (Trọng số 6 - Lưu lượng đọc chính).
+        Truy vấn kết hợp filter và search để ép PostgreSQL & FastAPI tính toán CPU.
+        """
+        categories = ["living-room", "dining", "bedroom", "workspace", "decor"]
+        cat = random.choice(categories)
+        search_terms = ["sofa", "ban", "ghe", "den", "go", "blanc", ""]
+        kw = random.choice(search_terms)
+
+        url = f"/products?category={cat}&search={kw}" if kw else f"/products?category={cat}"
+        self.client.get(url, name="1. GET /products (Lọc & Tìm kiếm)")
+
+    @task(4)
+    def view_categories(self):
+        """Tác vụ duyệt danh mục phòng (Trọng số 4)."""
+        self.client.get("/categories", name="2. GET /categories (Danh mục)")
+
+    @task(2)
+    def checkout_order(self):
+        """
+        Tác vụ đặt hàng (Trọng số 2 - Ghi dữ liệu vào PostgreSQL & kích hoạt Worker).
+        Tạo đơn hàng hoàn chỉnh với các item ngẫu nhiên.
+        """
+        random_id = random.randint(100, 9999)
+        order_payload = {
+            "customer_name": f"Khách Hàng Test #{random_id}",
+            "customer_phone": f"09{random.randint(10000000, 99999999)}",
+            "shipping_address": f"{random.randint(1, 200)} Đường Thử Nghiệm Tải, Quận {random.randint(1, 12)}, TP.HCM",
+            "notes": "Đơn hàng tự động sinh ra bởi Locust Load Testing để kích hoạt HPA Auto-scaling",
+            "payment_method": random.choice(["cod", "qr_transfer"]),
+            "items": [
+                {
+                    "product_id": random.randint(1, 24),
+                    "product_name": f"Sản Phẩm Nội Thất Mẫu #{random.randint(1, 24)}",
+                    "product_image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
+                    "price": float(random.randint(2000000, 18000000)),
+                    "quantity": random.randint(1, 3)
+                }
+            ]
+        }
+        self.client.post("/orders", json=order_payload, name="3. POST /orders (Đặt hàng)")
 
     @task(1)
-    def health_check(self):
-        """Kiểm tra endpoint metrics / health"""
-        self.client.get("/metrics", name="Scrape Metrics")
+    def health_and_metrics_check(self):
+        """Tác vụ kiểm tra Kubernetes Probes & Prometheus Metrics (Trọng số 1)."""
+        self.client.get("/healthz", name="4. GET /healthz (Liveness)")
+        self.client.get("/readyz", name="5. GET /readyz (Readiness)")
+        self.client.get("/metrics", name="6. GET /metrics (Prometheus Scrape)")

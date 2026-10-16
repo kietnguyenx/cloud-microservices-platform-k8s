@@ -12,3 +12,4 @@ passlib[bcrypt]>=1.7.4
 requests>=2.31.0
 pytest>=7.4.4
 prometheus-fastapi-instrumentator>=6.0.0
+httpx>=0.25.0

@@ -18,8 +18,8 @@ spec:
           imagePullPolicy: IfNotPresent #Nếu máy đã có sẵn image thì dùng luôn, không tải lại
           envFrom: #Nạp toàn bộ biến môi trường từ File số 1(ConfigsMap & Secret)
             - configMapRef:
-              name: backend-config
+                name: backend-config
             - secretRef:
-              name: backend-secret
+                name: backend-secret
             
           

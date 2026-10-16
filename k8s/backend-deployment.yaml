@@ -14,23 +14,23 @@ spec:
         app: backend #Dán nhãn 'app: backend' cho Pod
     spec:
       containers:
-        -name: backend
-        image: ryannguyxn/todo-api:v1 #sử dụng image todo-api:v1
-        imagePullPolicy: IfNotPresent #Nếu máy đã có sẵn image thì dùng luôn, không tải lại
-        ports:
-          - containerPort: 8000 #mở cổng mà FastApi(Uvicorn) của container đang lắng nghe
-        envFrom: #Nạp toàn bộ biến môi trường từ File số 1(ConfigsMap & Secret)
-          - configMapRef:
-            name: backend-config #Nạp toàn bộ biến từ file ConfigsMap
-          - secretRef:
-            name: backend-secret #Nạp toàn bộ biến từ file Secret
-        resources:
-          requests:
-            cpu: "100m" #Mức tối thiểu cần cấp lúc chạy: 0.1 nhân CPU
-            memory: "128Mi" #Ram tối thiểu
-          limits:
-            cpu: "500m" #Mức tối đa được phép dùng: 0.5 CPU
-            memory: "256Mi" #Ram tối đa
+        - name: backend
+          image: ryannguyxn/todo-backend:latest #sử dụng image backend mới nhất từ CI/CD
+          imagePullPolicy: IfNotPresent #Nếu máy đã có sẵn image thì dùng luôn, không tải lại
+          ports:
+            - containerPort: 8000 #mở cổng mà FastApi(Uvicorn) của container đang lắng nghe
+          envFrom: #Nạp toàn bộ biến môi trường từ File số 1(ConfigsMap & Secret)
+            - configMapRef:
+                name: backend-config #Nạp toàn bộ biến từ file ConfigsMap
+            - secretRef:
+                name: backend-secret #Nạp toàn bộ biến từ file Secret
+          resources:
+            requests:
+              cpu: "100m" #Mức tối thiểu cần cấp lúc chạy: 0.1 nhân CPU
+              memory: "128Mi" #Ram tối thiểu
+            limits:
+              cpu: "500m" #Mức tối đa được phép dùng: 0.5 CPU
+              memory: "256Mi" #Ram tối đa
 
 ---
 #Tạo tên miền nội bộ cho 'backend' và chia tải cho 2 Pod

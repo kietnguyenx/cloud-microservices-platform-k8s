@@ -5,9 +5,9 @@ from backend.main import app
 client = TestClient(app)
 
 def test_root_endpoint():
-    """Kiểm tra phản hồi trang chủ API"""
+    """Kiểm tra phản hồi trang chủ API (chuyển hướng sang /app hoặc 200)"""
     response = client.get("/")
-    assert response.status_code in [200, 404]
+    assert response.status_code in [200, 307, 404]
 
 def test_docs_available():
     """Đảm bảo OpenAPI Swagger docs truy cập được"""
@@ -22,5 +22,5 @@ def test_metrics_endpoint():
 
 def test_login_unauthorized():
     """Kiểm tra xử lý thông tin đăng nhập sai"""
-    response = client.post("/auth/login", json={"email": "wrong_user@blanc.vn", "password": "wrong_password"})
+    response = client.post("/login", json={"email": "wrong_user@blanc.vn", "password": "wrong_password"})
     assert response.status_code in [400, 401]
