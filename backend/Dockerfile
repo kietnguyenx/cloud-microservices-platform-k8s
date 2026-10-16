@@ -1,20 +1,23 @@
-FROM python:3.10-slim
+# Stage 1: Build dependencies
+FROM python:3.12-slim AS builder
 
-#Thiết lập thư mục làm việc trong container
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Stage 2: Runtime image
+FROM python:3.12-slim
 WORKDIR /app
 
-#Ngăn Python tạo file .pyc và bật unbuffured log
-ENV PYTHONDONTWRITEBYTECODE=1 
-ENV PYTHONUNBUFFERED=1
+RUN addgroup --system appgroup && adduser --system --group appuser
 
-#Sao chép file requirements và cài đặt thư viện
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+COPY --chown=appuser:appgroup . /app/backend
 
-#Sao chép toàn bộ mã nguồn vào thư mục /app
-COPY . .
+# Bổ sung cả /app và /app/backend vào PYTHONPATH
+ENV PATH=/home/appuser/.local/bin:$PATH
+ENV PYTHONPATH=/home/appuser/.local/lib/python3.12/site-packages:/app:/app/backend
+USER appuser
 
 EXPOSE 8000
-
-#Lệnh khởi chạy FastAPI với Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
