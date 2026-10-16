@@ -1,27 +1,13 @@
-# Python cache and byte-code
+﻿# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
-*.pyc
+*.class
 
-# Virtual environments
-venv/
-env/
-.venv/
-ENV/
-env.bak/
-venv.bak/
+# Environment variables & local secrets
+.env
+backend/.env
+*.env
 
-# Testing & coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Editor and OS temporary files
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-desktop.ini
+# Local Databases
+*.db
+*.sqlite3
