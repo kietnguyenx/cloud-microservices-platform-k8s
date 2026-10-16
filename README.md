@@ -22,37 +22,6 @@
 
 Hệ thống được thiết kế theo kiến trúc **Microservices phân tán, phi trạng thái (Stateless Services) kết hợp dịch vụ lưu trữ bền vững (Stateful Services)**:
 
-```mermaid
-flowchart TB
-    Client([Trình duyệt Người dùng / Tester]) --> Ingress[Kubernetes Ingress Controller]
-    
-    subgraph K8s_Cluster [Cụm Kubernetes]
-        Ingress -->|Route / | FrontendService[Frontend Service Nginx]
-        Ingress -->|Route /api| BackendService[Backend Service FastAPI]
-        
-        FrontendService --> FrontendPods[Frontend Pods: Nginx SPA]
-        BackendService --> BackendPods[Backend Pods: FastAPI REST API]
-        
-        BackendPods -->|Đọc / Ghi dữ liệu| PostgresDB[(PostgreSQL StatefulSet + PVC)]
-        BackendPods -->|Task Queue & Cache| RedisQueue[(Redis Queue / Broker)]
-        
-        WorkerPods[Worker Pods: Background Consumer] -->|Xử lý job ngầm & Gửi mail| RedisQueue
-        WorkerPods -->|Cập nhật trạng thái| PostgresDB
-
-        subgraph AutoScaling [Cơ Chế Auto Scaling]
-            MetricsServer[Metrics Server API] -->|Đo tải CPU / RAM| BackendPods
-            HPA[Horizontal Pod Autoscaler HPA] -->|CPU > 70% Scale 2 -> 10 Pods| BackendPods
-        end
-
-        subgraph Observability [Giám Sát & Cảnh Báo]
-            Prometheus[Prometheus Server] -->|Scrape /metrics mỗi 15s| BackendPods
-            Prometheus -->|Scrape Node / Pod metrics| MetricsServer
-            Prometheus -->|Gửi cảnh báo lỗi| Alertmanager[Alertmanager]
-            Grafana[Grafana Dashboard] -->|Truy vấn số liệu| Prometheus
-        end
-    end
-```
-
 ---
 
 ## 📁 Cấu Trúc Thư Mục Dự Án
