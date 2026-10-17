@@ -1,0 +1,15 @@
+---B1:Dọn dẹp và làm sạch môi trường cũ
+
+docker compose down -v
+
+---B2: Khởi động và Build lại toàn bộ hệ thống
+
+docker compose up -d --build
+
+---B3:Kiểm tra trạng thái các container
+
+docker ps
+
+Giao diện Web Frontend: http://localhost (hoặc [http://127.0.0.1](http://127.0.0.1))
+Tài liệu API Backend (Swagger UI): Kiểm tra trực tiếp các 
+endpoint FastAP:[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
