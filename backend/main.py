@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 import re
 import random
@@ -11,17 +13,52 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
-from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
-from schemas import (
-    CategoryResponseModel,
-    ProductCreateSchema,
-    ProductUpdateSchema,
-    ProductResponseModel,
-    OrderCreateSchema,
-    OrderResponseModel
-)
-from auth import auth_router, verify_admin
+logger = logging.getLogger("uvicorn.error")
+
+
+def publish_order_task(order_code: str, customer_name: str, total_amount: float):
+    """Đẩy tác vụ xử lý đơn hàng vào Redis queue để Worker service xử lý ngầm."""
+    try:
+        import redis
+        client = redis.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=1)
+        task_payload = {
+            "task": "send_order_email",
+            "data": {
+                "order_code": order_code,
+                "customer_name": customer_name,
+                "total_amount": total_amount
+            }
+        }
+        client.rpush("task_queue", json.dumps(task_payload))
+        logger.info(f"Đã gửi tác vụ xử lý đơn hàng #{order_code} vào Redis queue.")
+    except Exception as e:
+        logger.debug(f"Bỏ qua gửi Redis task: {e}")
+
+
+try:
+    from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
+    from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
+    from schemas import (
+        CategoryResponseModel,
+        ProductCreateSchema,
+        ProductUpdateSchema,
+        ProductResponseModel,
+        OrderCreateSchema,
+        OrderResponseModel
+    )
+    from auth import auth_router, verify_admin
+except ImportError:
+    from backend.database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
+    from backend.models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
+    from backend.schemas import (
+        CategoryResponseModel,
+        ProductCreateSchema,
+        ProductUpdateSchema,
+        ProductResponseModel,
+        OrderCreateSchema,
+        OrderResponseModel
+    )
+    from backend.auth import auth_router, verify_admin
 
 
 def create_slug(text: str) -> str:
@@ -258,6 +295,7 @@ def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(new_order)
+    publish_order_task(new_order.order_code, new_order.customer_name, new_order.total_amount)
     return new_order
 
 

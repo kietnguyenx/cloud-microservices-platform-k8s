@@ -8,28 +8,50 @@ from fastapi import APIRouter, Depends, HTTPException, Security, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from database import settings, get_db
-from models import UserModelDB
-from schemas import (
-    UserModelPydantic,
-    FormLoginSchema,
-    SignupResponseModel,
-    LoginResponseModel,
-    UserResponseModel
-)
+try:
+    from database import settings, get_db
+    from models import UserModelDB
+    from schemas import (
+        UserModelPydantic,
+        FormLoginSchema,
+        SignupResponseModel,
+        LoginResponseModel,
+        UserResponseModel
+    )
+except ImportError:
+    from backend.database import settings, get_db
+    from backend.models import UserModelDB
+    from backend.schemas import (
+        UserModelPydantic,
+        FormLoginSchema,
+        SignupResponseModel,
+        LoginResponseModel,
+        UserResponseModel
+    )
 
-# Thử import passlib và jose nếu môi trường đã cài sẵn
+# Khởi tạo hỗ trợ băm mật khẩu: Ưu tiên bcrypt trực tiếp, sau đó tới passlib và SHA256 fallback
+try:
+    import bcrypt
+    HAS_BCRYPT = True
+except ImportError:
+    HAS_BCRYPT = False
+
 try:
     from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    pwd_context: Optional[CryptContext] = CryptContext(schemes=["bcrypt"], deprecated="auto")
     HAS_PASSLIB = True
-except ImportError:
+except Exception:
+    pwd_context = None
     HAS_PASSLIB = False
 
+# Khởi tạo hỗ trợ JWT token: Ưu tiên jose, fallback cơ chế HMAC SHA256 có sẵn của Python
 try:
     from jose import jwt, JWTError
     HAS_JOSE = True
 except ImportError:
+    jwt = None
+    class JWTError(Exception):
+        pass
     HAS_JOSE = False
 
 security = HTTPBearer(auto_error=False)
@@ -43,23 +65,49 @@ class AuthHandler:
         self.expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
     def get_password_hash(self, password: str) -> str:
-        if HAS_PASSLIB:
-            return pwd_context.hash(password)
+        safe_pwd = password.encode("utf-8")[:72]
+        if HAS_BCRYPT:
+            try:
+                return bcrypt.hashpw(safe_pwd, bcrypt.gensalt()).decode("utf-8")
+            except Exception:
+                pass
+        if HAS_PASSLIB and pwd_context is not None:
+            try:
+                return pwd_context.hash(safe_pwd.decode("utf-8", errors="ignore"))
+            except Exception:
+                pass
         salt = self.secret[:16]
         return "sha256$" + hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        if HAS_PASSLIB and not hashed_password.startswith("sha256$"):
-            try:
-                return pwd_context.verify(plain_password, hashed_password)
-            except Exception:
-                pass
+        safe_pwd = plain_password.encode("utf-8")[:72]
+        if hashed_password.startswith(("$2a$", "$2b$", "$2y$")):
+            if HAS_BCRYPT:
+                try:
+                    return bcrypt.checkpw(safe_pwd, hashed_password.encode("utf-8"))
+                except Exception:
+                    pass
+            if HAS_PASSLIB and pwd_context is not None:
+                try:
+                    return pwd_context.verify(safe_pwd.decode("utf-8", errors="ignore"), hashed_password)
+                except Exception:
+                    pass
+        elif hashed_password.startswith("sha256$"):
+            salt = self.secret[:16]
+            expected = "sha256$" + hashlib.sha256((plain_password + salt).encode("utf-8")).hexdigest()
+            return hashed_password == expected
+        else:
+            if HAS_BCRYPT:
+                try:
+                    return bcrypt.checkpw(safe_pwd, hashed_password.encode("utf-8"))
+                except Exception:
+                    pass
         salt = self.secret[:16]
         expected = "sha256$" + hashlib.sha256((plain_password + salt).encode("utf-8")).hexdigest()
         return hashed_password == expected
 
     def encode_token(self, user_id: int) -> str:
-        if HAS_JOSE:
+        if HAS_JOSE and jwt is not None:
             payload = {
                 "sub": str(user_id),
                 "exp": datetime.now(timezone.utc) + timedelta(minutes=self.expire_minutes),
@@ -76,7 +124,7 @@ class AuthHandler:
         return f"{token_str}.{sig}"
 
     def decode_token(self, token: str) -> int:
-        if HAS_JOSE:
+        if HAS_JOSE and jwt is not None:
             try:
                 payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
                 user_id = payload.get("sub")

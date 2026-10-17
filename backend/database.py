@@ -3,7 +3,10 @@ import logging
 from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from models import Base, UserModelDB, CategoryModelDB, ProductModelDB
+try:
+    from models import Base, UserModelDB, CategoryModelDB, ProductModelDB
+except ImportError:
+    from backend.models import Base, UserModelDB, CategoryModelDB, ProductModelDB
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -29,6 +32,7 @@ class Settings:
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", env_vars.get("CORS_ORIGINS", "*"))
     HOST: str = os.getenv("HOST", env_vars.get("HOST", "0.0.0.0"))
     PORT: int = int(os.getenv("PORT", env_vars.get("PORT", "8000")))
+    REDIS_URL: str = os.getenv("REDIS_URL", env_vars.get("REDIS_URL", "redis://redis:6379/0"))
 
     @property
     def cors_origins(self) -> List[str]:
@@ -42,16 +46,20 @@ settings = Settings()
 # =============================================================================
 # 2. KHỞI TẠO SQLALCHEMY ENGINE & SESSION
 # =============================================================================
-is_sqlite = settings.POSTGRES_URL.startswith("sqlite")
+db_url = settings.POSTGRES_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+is_sqlite = db_url.startswith("sqlite")
 
 if is_sqlite:
     engine = create_engine(
-        settings.POSTGRES_URL,
+        db_url,
         connect_args={"check_same_thread": False}
     )
 else:
     engine = create_engine(
-        settings.POSTGRES_URL,
+        db_url,
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,
@@ -505,7 +513,10 @@ DEMO_PRODUCTS_DATA = [
 
 def seed_initial_data(db: Session):
     """Tự động nạp tài khoản admin và danh mục, toàn bộ 24 sản phẩm mẫu vào database."""
-    from auth import auth_handler
+    try:
+        from auth import auth_handler
+    except ImportError:
+        from backend.auth import auth_handler
     try:
         # 1. Admin mặc định
         admin_user = db.query(UserModelDB).filter(UserModelDB.email == "admin@blanc.vn").first()

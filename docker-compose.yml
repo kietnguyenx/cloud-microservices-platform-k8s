@@ -15,7 +15,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg-isready -U todo_user  -d todo_db " ]
+      test: [ "CMD-SHELL", "pg_isready -U todo_user -d todo_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
     container_name: todo-backend
     restart: always
     environment:
-      DATABASE_URL: postgresql://todo_user:todo_password@postgres:5432/todo_db
+      DATABASE_URL: postgresql+psycopg2://todo_user:todo_password@postgres:5432/todo_db
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: supersecretjwtkeychangeinproduction
       ALGORITHM: HS256
@@ -69,7 +69,7 @@ services:
     container_name: todo-worker
     restart: always
     environment:
-      DATABASE_URL: postgresql://todo_user:todo_password@postgres:5432/todo_db
+      DATABASE_URL: postgresql+psycopg2://todo_user:todo_password@postgres:5432/todo_db
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:

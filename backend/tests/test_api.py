@@ -24,3 +24,29 @@ def test_login_unauthorized():
     """Kiểm tra xử lý thông tin đăng nhập sai"""
     response = client.post("/login", json={"email": "wrong_user@blanc.vn", "password": "wrong_password"})
     assert response.status_code in [400, 401]
+
+def test_create_order_endpoint():
+    """Kiểm tra tạo đơn hàng mới và trả về mã đơn hàng"""
+    payload = {
+        "customer_name": "Khách Test",
+        "customer_phone": "0912345678",
+        "shipping_address": "123 Đường Test, Hà Nội",
+        "notes": "Giao giờ hành chính",
+        "payment_method": "cod",
+        "items": [
+            {
+                "product_id": 1,
+                "product_name": "Sofa Modular Blanc",
+                "product_image": "",
+                "price": 16800000.0,
+                "quantity": 1,
+                "subtotal": 16800000.0
+            }
+        ]
+    }
+    response = client.post("/orders", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["customer_name"] == "Khách Test"
+    assert data["order_code"].startswith("BLC-")
+    assert len(data["items"]) == 1

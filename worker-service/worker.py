@@ -19,6 +19,8 @@ logger = logging.getLogger("worker")
 # Cấu hình môi trường
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://todo_user:todo_password@postgres:5432/todo_db")
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 QUEUE_NAME = os.getenv("TASK_QUEUE", "task_queue")
 HEARTBEAT_INTERVAL = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
 
@@ -29,43 +31,67 @@ is_running = True
 def handle_shutdown(signum, frame):
     """Xử lý tín hiệu tắt container một cách an toàn (Graceful Shutdown)."""
     global is_running
-    logger.info(f"Nhận tín hiệu dừng ({signal.Signals(signum).name}). Đang chuẩn bị dừng worker an toàn...")
+    try:
+        sig_name = signal.Signals(signum).name
+    except Exception:
+        sig_name = str(signum)
+    logger.info(f"Nhận tín hiệu dừng ({sig_name}). Đang chuẩn bị dừng worker an toàn...")
     is_running = False
 
 
-signal.signal(signal.SIGINT, handle_shutdown)
-signal.signal(signal.SIGTERM, handle_shutdown)
+try:
+    signal.signal(signal.SIGINT, handle_shutdown)
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, handle_shutdown)
+except Exception:
+    pass
 
 
 def init_redis_client(max_retries: int = 10, delay: int = 3) -> redis.Redis:
-    """Khởi tạo kết nối tới Redis có cơ chế thử lại (retry)."""
+    """Khởi tạo kết nối tới Redis có cơ chế thử lại (retry) và tự động fallback sang localhost nếu chạy ngoài container."""
+    candidate_urls = [REDIS_URL]
+    if "://redis:" in REDIS_URL:
+        candidate_urls.append(REDIS_URL.replace("://redis:", "://localhost:"))
+    elif "://redis" in REDIS_URL:
+        candidate_urls.append(REDIS_URL.replace("://redis", "://localhost"))
+
     for attempt in range(1, max_retries + 1):
-        try:
-            logger.info(f"Đang thử kết nối Redis ({REDIS_URL}) - Lần {attempt}/{max_retries}...")
-            client = redis.from_url(REDIS_URL, decode_responses=True)
-            if client.ping():
-                logger.info("Kết nối Redis thành công!")
-                return client
-        except Exception as e:
-            logger.warning(f"Chưa thể kết nối Redis: {e}. Thử lại sau {delay}s...")
-            time.sleep(delay)
+        for url in candidate_urls:
+            try:
+                logger.info(f"Đang thử kết nối Redis ({url}) - Lần {attempt}/{max_retries}...")
+                client = redis.from_url(url, decode_responses=True)
+                if client.ping():
+                    logger.info(f"Kết nối Redis thành công ({url})!")
+                    return client
+            except Exception as e:
+                logger.warning(f"Chưa thể kết nối Redis ({url}): {e}")
+        logger.info(f"Thử lại sau {delay}s...")
+        time.sleep(delay)
     logger.error("Không thể kết nối đến Redis sau nhiều lần thử.")
     sys.exit(1)
 
 
 def init_database_engine(max_retries: int = 10, delay: int = 3):
-    """Khởi tạo kết nối SQLAlchemy tới PostgreSQL có cơ chế retry."""
+    """Khởi tạo kết nối SQLAlchemy tới PostgreSQL có cơ chế retry và tự động fallback sang localhost nếu chạy ngoài container."""
+    candidate_urls = [DATABASE_URL]
+    if "@postgres:" in DATABASE_URL:
+        candidate_urls.append(DATABASE_URL.replace("@postgres:", "@localhost:"))
+    elif "@postgres" in DATABASE_URL:
+        candidate_urls.append(DATABASE_URL.replace("@postgres", "@localhost"))
+
     for attempt in range(1, max_retries + 1):
-        try:
-            logger.info(f"Đang thử kết nối PostgreSQL - Lần {attempt}/{max_retries}...")
-            engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            logger.info("Kết nối PostgreSQL thành công!")
-            return engine
-        except Exception as e:
-            logger.warning(f"Chưa thể kết nối PostgreSQL: {e}. Thử lại sau {delay}s...")
-            time.sleep(delay)
+        for url in candidate_urls:
+            try:
+                logger.info(f"Đang thử kết nối PostgreSQL ({url}) - Lần {attempt}/{max_retries}...")
+                engine = create_engine(url, pool_pre_ping=True)
+                with engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                logger.info(f"Kết nối PostgreSQL thành công ({url})!")
+                return engine
+            except Exception as e:
+                logger.warning(f"Chưa thể kết nối PostgreSQL ({url}): {e}")
+        logger.info(f"Thử lại sau {delay}s...")
+        time.sleep(delay)
     logger.warning("Không thể kết nối PostgreSQL. Worker vẫn sẽ tiếp tục lắng nghe Redis queue.")
     return None
 

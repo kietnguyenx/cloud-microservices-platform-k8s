@@ -20,7 +20,7 @@ spec:
           image: prom/alertmanager:v0.25.0
           args:
             - "--config.file=/etc/alertmanager/alertmanager.yml"
-            - "--storage.tsdb.path=/alertmanager"
+            - "--storage.path=/alertmanager"
           ports:
             - containerPort: 9093
               name: alertmanager

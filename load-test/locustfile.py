@@ -45,6 +45,8 @@ class MicroservicesLoadTestUser(HttpUser):
         Tạo đơn hàng hoàn chỉnh với các item ngẫu nhiên.
         """
         random_id = random.randint(100, 9999)
+        price_val = float(random.randint(2000000, 18000000))
+        qty_val = random.randint(1, 3)
         order_payload = {
             "customer_name": f"Khách Hàng Test #{random_id}",
             "customer_phone": f"09{random.randint(10000000, 99999999)}",
@@ -56,8 +58,9 @@ class MicroservicesLoadTestUser(HttpUser):
                     "product_id": random.randint(1, 24),
                     "product_name": f"Sản Phẩm Nội Thất Mẫu #{random.randint(1, 24)}",
                     "product_image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
-                    "price": float(random.randint(2000000, 18000000)),
-                    "quantity": random.randint(1, 3)
+                    "price": price_val,
+                    "quantity": qty_val,
+                    "subtotal": price_val * qty_val
                 }
             ]
         }
