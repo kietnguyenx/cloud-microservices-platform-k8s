@@ -10,18 +10,431 @@ const API_BASE = (window.location.port === "3000" || window.location.port === "5
     : "";
 
 // =============================================================================
-// 1. STATE ỨNG DỤNG (GIỎ HÀNG, BỘ LỌC, TÀI KHOẢN, ĐƠN HÀNG)
+// 1. STATE ỨNG DỤNG & DỮ LIỆU SẢN PHẨM NỘI THẤT CAO CẤP MẶC ĐỊNH
 // =============================================================================
+const DEFAULT_PRODUCTS = [
+    {
+        "id": 1,
+        "name": "Sofa Modular Blanc Soft L-Shape",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 16800000,
+        "originalPrice": 19500000,
+        "material": "Vải Nỉ Bỉ nhập khẩu & Gỗ Sồi tự nhiên",
+        "dimensions": "260 x 165 x 78 cm",
+        "rating": 5.0,
+        "reviewsCount": 38,
+        "badge": "Best Seller",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80",
+        "description": "Mẫu sofa góc chữ L mang phong cách Scandinavian hiện đại với thiết kế module linh hoạt, nệm mút bọt biển đàn hồi cao cấp êm ái tuyệt đối, khung gỗ sồi Bắc Mỹ đạt chuẩn kháng ẩm."
+    },
+    {
+        "id": 2,
+        "name": "Ghế Thư Giãn Lounge Armchair Nappa",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 7900000,
+        "originalPrice": 9200000,
+        "material": "Da bò Nappa cao cấp & Chân thép mạ Titan",
+        "dimensions": "85 x 82 x 90 cm",
+        "rating": 4.9,
+        "reviewsCount": 24,
+        "badge": "Ưu Đãi -15%",
+        "badgeType": "discount",
+        "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=800&q=80",
+        "description": "Điểm nhấn sang trọng cho góc phòng khách hoặc phòng đọc sách. Độ ngả lưng khoa học nâng đỡ cột sống, bề mặt da mềm mịn thoáng khí."
+    },
+    {
+        "id": 3,
+        "name": "Bàn Trà Tròn Kép Đôi Nordic Minimalist",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 4500000,
+        "originalPrice": 5200000,
+        "material": "Mặt đá cẩm thạch trắng & Gỗ Tần Bì",
+        "dimensions": "Bàn lớn D75cm, Bàn nhỏ D50cm",
+        "rating": 4.8,
+        "reviewsCount": 19,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=800&q=80",
+        "description": "Bộ đôi bàn trà lồng thông minh tiết kiệm diện tích. Mặt đá phiến chống trầy xước, chịu nhiệt độ cao kết hợp vân gỗ mộc tinh tế."
+    },
+    {
+        "id": 4,
+        "name": "Bàn Ăn Gỗ Sồi Tự Nhiên OAK Atelier",
+        "category": "dining",
+        "categoryId": 2,
+        "categoryName": "Bàn Ăn & Bếp",
+        "price": 13500000,
+        "originalPrice": 15500000,
+        "material": "Gỗ Sồi Trắng Bắc Mỹ nguyên khối (FSC)",
+        "dimensions": "180 x 85 x 75 cm (6-8 người)",
+        "rating": 5.0,
+        "reviewsCount": 42,
+        "badge": "Đặc Tuyển",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=800&q=80",
+        "description": "Chiếc bàn ăn trung tâm cho những bữa cơm sum vầy ấm cúng. Sơn phủ dầu lau thực vật an toàn thực phẩm, giữ trọn vẹn vân gỗ mộc tự nhiên."
+    },
+    {
+        "id": 5,
+        "name": "Set 4 Ghế Ăn Bọc Nệm Da Nordic Chair",
+        "category": "dining",
+        "categoryId": 2,
+        "categoryName": "Bàn Ăn & Bếp",
+        "price": 5800000,
+        "originalPrice": 6800000,
+        "material": "Khung gỗ Tần Bì & Đệm da PU chống nước",
+        "dimensions": "48 x 52 x 82 cm",
+        "rating": 4.9,
+        "reviewsCount": 31,
+        "badge": "Hot Deal",
+        "badgeType": "discount",
+        "image": "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=800&q=80",
+        "description": "Thiết kế lưng cong ôm sát cơ thể, mang lại cảm giác thoải mái khi dùng bữa. Dễ dàng vệ sinh lau chùi hàng ngày."
+    },
+    {
+        "id": 6,
+        "name": "Giường Ngủ Nệm Bọc Nỉ Minimalist Zen",
+        "category": "bedroom",
+        "categoryId": 3,
+        "categoryName": "Phòng Ngủ",
+        "price": 15200000,
+        "originalPrice": 17800000,
+        "material": "Khung thép chịu lực, gỗ Sồi & Nỉ dệt thô",
+        "dimensions": "180 x 200 cm (King Size)",
+        "rating": 5.0,
+        "reviewsCount": 29,
+        "badge": "Yêu Thích",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+        "description": "Mang phong cách Zen Nhật Bản kết hợp Scandinavian. Đầu giường êm ái làm điểm tựa đọc sách, khung thang giát giường chắc chắn không phát tiếng cọt kẹt."
+    },
+    {
+        "id": 7,
+        "name": "Tủ Đầu Giường 2 Ngăn Kéo Japandi Oak",
+        "category": "bedroom",
+        "categoryId": 3,
+        "categoryName": "Phòng Ngủ",
+        "price": 2450000,
+        "originalPrice": 2900000,
+        "material": "Gỗ Sồi tự nhiên & Ray trượt giảm chấn",
+        "dimensions": "45 x 40 x 50 cm",
+        "rating": 4.8,
+        "reviewsCount": 16,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1532323544230-7191fd51bc1b?auto=format&fit=crop&w=800&q=80",
+        "description": "Thiết kế nhỏ gọn, đường bo góc mềm mại hạn chế va đập. Ngăn kéo đóng mở êm ái chống ồn cho không gian nghỉ ngơi yên tĩnh."
+    },
+    {
+        "id": 8,
+        "name": "Bàn Làm Việc Studio Desk Gỗ Tự Nhiên",
+        "category": "workspace",
+        "categoryId": 4,
+        "categoryName": "Góc Làm Việc",
+        "price": 6800000,
+        "originalPrice": 7900000,
+        "material": "Mặt gỗ Sồi tự nhiên & Chân thép sơn tĩnh điện",
+        "dimensions": "140 x 70 x 75 cm",
+        "rating": 4.9,
+        "reviewsCount": 35,
+        "badge": "Best Seller",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=800&q=80",
+        "description": "Bàn làm việc tối giản tích hợp khe luồn dây cáp thông minh. Rộng rãi đủ cho 2 màn hình lớn, bề mặt mịn màng truyền cảm hứng sáng tạo."
+    },
+    {
+        "id": 9,
+        "name": "Ghế Làm Việc Ergonomic Thư Giãn",
+        "category": "workspace",
+        "categoryId": 4,
+        "categoryName": "Góc Làm Việc",
+        "price": 4900000,
+        "originalPrice": 5600000,
+        "material": "Lưới thoáng khí Wintex & Piston Class 4",
+        "dimensions": "Tiêu chuẩn điều chỉnh linh hoạt",
+        "rating": 4.8,
+        "reviewsCount": 52,
+        "badge": "Hot",
+        "badgeType": "discount",
+        "image": "https://images.unsplash.com/photo-1589384267710-7a170981ca78?auto=format&fit=crop&w=800&q=80",
+        "description": "Hỗ trợ đỡ thắt lưng linh hoạt giúp giảm đau mỏi khi ngồi làm việc lâu. Tay vịn 3D đa hướng, chân xoay hợp kim nhôm chịu tải 150kg."
+    },
+    {
+        "id": 10,
+        "name": "Đèn Cây Đứng Phòng Khách Nordic Floor Lamp",
+        "category": "decor",
+        "categoryId": 5,
+        "categoryName": "Đèn & Decor",
+        "price": 1850000,
+        "originalPrice": 2200000,
+        "material": "Kim loại mạ đồng mờ & Chao đèn vải lanh",
+        "dimensions": "Đường kính 35cm, Cao 155cm",
+        "rating": 4.9,
+        "reviewsCount": 22,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=80",
+        "description": "Ánh sáng vàng ấm 3000K êm dịu tạo cảm giác thư thái cho không gian sống ban đêm. Công tắc bàn đạp chân tiện lợi."
+    },
+    {
+        "id": 11,
+        "name": "Thảm Trải Sàn Dệt Thủ Công Bắc Âu Moroc",
+        "category": "decor",
+        "categoryId": 5,
+        "categoryName": "Đèn & Decor",
+        "price": 3200000,
+        "originalPrice": 3800000,
+        "material": "Sợi len tổng hợp mật độ cao, êm ái",
+        "dimensions": "160 x 230 cm",
+        "rating": 4.7,
+        "reviewsCount": 14,
+        "badge": null,
+        "badgeType": null,
+        "image": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=800&q=80",
+        "description": "Họa tiết hình học trừu tượng tinh tế tôn lên vẻ đẹp của bộ sofa và sàn gỗ. Không rụng sợi, chống trơn trượt hiệu quả."
+    },
+    {
+        "id": 12,
+        "name": "Gương Đứng Toàn Thân Vòm Tròn Arch Mirror",
+        "category": "decor",
+        "categoryId": 5,
+        "categoryName": "Đèn & Decor",
+        "price": 2600000,
+        "originalPrice": 3100000,
+        "material": "Phôi gương Bỉ tráng bạc 8 lớp & Khung gỗ",
+        "dimensions": "60 x 170 cm",
+        "rating": 5.0,
+        "reviewsCount": 40,
+        "badge": "Best Seller",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
+        "description": "Gương soi sáng trong trẻo, chân thực không méo hình. Thiết kế mái vòm cong mềm mại mở rộng thị giác cho căn phòng."
+    },
+    {
+        "id": 13,
+        "name": "Kệ Tivi Gỗ Sồi Bắc Âu Minimalist Console",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 8500000,
+        "originalPrice": 9900000,
+        "material": "Gỗ Sồi Trắng tự nhiên & Phụ kiện ray Blum giảm chấn",
+        "dimensions": "180 x 42 x 48 cm",
+        "rating": 4.9,
+        "reviewsCount": 27,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80",
+        "description": "Thiết kế thanh thoát với 2 cánh lùa nan gỗ thông thoáng tản nhiệt cho thiết bị âm thanh. Tinh tế đến từng góc vát 45 độ."
+    },
+    {
+        "id": 14,
+        "name": "Ghế Đôn Tròn Bọc Nỉ Boucle Cao Cấp",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 1850000,
+        "originalPrice": 2300000,
+        "material": "Vải lông cừu Boucle mềm mại & Đế gỗ tần bì",
+        "dimensions": "Đường kính 40cm, Cao 45cm",
+        "rating": 4.8,
+        "reviewsCount": 33,
+        "badge": "Hot",
+        "badgeType": "discount",
+        "image": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
+        "description": "Chiếc đôn nhỏ xinh xắn vừa làm ghế phụ tiếp khách, vừa làm bàn trà hoặc góc decor sống ảo siêu ấm cúng."
+    },
+    {
+        "id": 15,
+        "name": "Bàn Ăn Tròn Gỗ Sồi Mở Rộng Extension Table",
+        "category": "dining",
+        "categoryId": 2,
+        "categoryName": "Bàn Ăn & Bếp",
+        "price": 14800000,
+        "originalPrice": 17000000,
+        "material": "Gỗ Sồi tự nhiên & Khung trượt hợp kim cao cấp",
+        "dimensions": "D110cm (mở rộng 155cm) x Cao 75cm",
+        "rating": 5.0,
+        "reviewsCount": 18,
+        "badge": "Thông Minh",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1577140917170-285929fb55b7?auto=format&fit=crop&w=800&q=80",
+        "description": "Bình thường là bàn tròn ấm cúng 4 người, khi có khách kéo dài thành bàn bầu dục 6-8 người cực kỳ tiện lợi và mượt mà."
+    },
+    {
+        "id": 16,
+        "name": "Tủ Quần Áo 3 Cánh Scandi Minimalist Wardrobe",
+        "category": "bedroom",
+        "categoryId": 3,
+        "categoryName": "Phòng Ngủ",
+        "price": 18200000,
+        "originalPrice": 21000000,
+        "material": "Gỗ Tần Bì phủ veneer sồi cao cấp & Bản lề hơi",
+        "dimensions": "160 x 60 x 210 cm",
+        "rating": 4.9,
+        "reviewsCount": 21,
+        "badge": "Đặc Tuyển",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80",
+        "description": "Không gian lưu trữ khoa học với khoang treo áo dài, ngăn gấp đồ và ngăn kéo có khóa an toàn. Vân gỗ sáng màu mở rộng không gian phòng ngủ."
+    },
+    {
+        "id": 17,
+        "name": "Kệ Sách Đứng 5 Tầng Minimalist Bookshelf",
+        "category": "workspace",
+        "categoryId": 4,
+        "categoryName": "Góc Làm Việc",
+        "price": 5400000,
+        "originalPrice": 6200000,
+        "material": "Khung thép sơn tĩnh điện & Đợt gỗ Sồi tự nhiên",
+        "dimensions": "80 x 32 x 185 cm",
+        "rating": 4.8,
+        "reviewsCount": 29,
+        "badge": null,
+        "badgeType": null,
+        "image": "https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=800&q=80",
+        "description": "Thiết kế hở 2 mặt thoáng đãng, vừa làm giá sách, vừa làm vách ngăn nhẹ phân chia không gian sống tinh tế."
+    },
+    {
+        "id": 18,
+        "name": "Đèn Thả Trần Thủy Tinh Khói Amber Pendant",
+        "category": "decor",
+        "categoryId": 5,
+        "categoryName": "Đèn & Decor",
+        "price": 2150000,
+        "originalPrice": 2600000,
+        "material": "Thủy tinh màu hổ phách thổi thủ công & Đui đồng thau",
+        "dimensions": "Đường kính 28cm x Dây thả tùy chỉnh 120cm",
+        "rating": 4.9,
+        "reviewsCount": 36,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=800&q=80",
+        "description": "Thả trên bàn ăn hoặc đảo bếp, ánh sáng qua lớp thủy tinh khói vàng ấm đem lại bầu không khí lãng mạn như nhà hàng cao cấp."
+    },
+    {
+        "id": 19,
+        "name": "Bàn Làm Việc Nâng Hạ Chiều Cao Smart Standing Desk",
+        "category": "workspace",
+        "categoryId": 4,
+        "categoryName": "Góc Làm Việc",
+        "price": 9200000,
+        "originalPrice": 10800000,
+        "material": "Mặt gỗ Sồi tự nhiên & Động cơ Dual Motor nâng hạ êm ái",
+        "dimensions": "150 x 75 x 65-125 cm (tùy chỉnh điện)",
+        "rating": 5.0,
+        "reviewsCount": 46,
+        "badge": "Công Nghệ",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?auto=format&fit=crop&w=800&q=80",
+        "description": "Bàn nâng hạ thông minh bảo vệ cột sống, tích hợp bộ nhớ 4 vị trí nhớ độ cao và cảm biến chống va chạm an toàn."
+    },
+    {
+        "id": 20,
+        "name": "Tủ Rượu & Kệ Ly Gỗ Sồi Scandi Bar Cabinet",
+        "category": "dining",
+        "categoryId": 2,
+        "categoryName": "Bàn Ăn & Bếp",
+        "price": 11500000,
+        "originalPrice": 13200000,
+        "material": "Gỗ Sồi tự nhiên, kính gợn sóng Fluted Glass & Đèn LED âm",
+        "dimensions": "90 x 42 x 135 cm",
+        "rating": 4.9,
+        "reviewsCount": 23,
+        "badge": "Mới",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1544457070-4cd773b4d71e?auto=format&fit=crop&w=800&q=80",
+        "description": "Tủ rượu sang trọng với giá treo ly ngược, khay để rượu nghiêng chuẩn và cánh kính sọc mờ tạo hiệu ứng thị giác huyền ảo."
+    },
+    {
+        "id": 21,
+        "name": "Ghế Bập Bênh Thư Giãn Rocking Lounge Chair",
+        "category": "living-room",
+        "categoryId": 1,
+        "categoryName": "Phòng Khách",
+        "price": 6200000,
+        "originalPrice": 7100000,
+        "material": "Khung gỗ Uốn cong Thụy Điển & Nỉ lông cừu Boucle",
+        "dimensions": "78 x 92 x 88 cm",
+        "rating": 4.8,
+        "reviewsCount": 34,
+        "badge": "Yêu Thích",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=800&q=80",
+        "description": "Góc thư giãn lý tưởng để đọc sách, ru em bé hoặc nhâm nhi tách trà. Bập bênh êm ái với góc nghiêng an toàn tối đa."
+    },
+    {
+        "id": 22,
+        "name": "Bàn Trang Điểm Kèm Gương Tròn LED Scandi Vanity",
+        "category": "bedroom",
+        "categoryId": 3,
+        "categoryName": "Phòng Ngủ",
+        "price": 7600000,
+        "originalPrice": 8900000,
+        "material": "Gỗ Sồi Trắng & Gương cảm ứng 3 chế độ sáng",
+        "dimensions": "100 x 45 x 128 cm",
+        "rating": 4.9,
+        "reviewsCount": 41,
+        "badge": "Bán Chạy",
+        "badgeType": "featured",
+        "image": "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=800&q=80",
+        "description": "Bộ bàn phấn thanh lịch với gương LED cảm ứng ánh sáng tự nhiên. Các ngăn chia mỹ phẩm nhung mềm bảo vệ đồ trang sức."
+    },
+    {
+        "id": 23,
+        "name": "Set 2 Ghế Bar Gỗ Sồi Tự Nhiên Nordic Barstool",
+        "category": "dining",
+        "categoryId": 2,
+        "categoryName": "Bàn Ăn & Bếp",
+        "price": 3900000,
+        "originalPrice": 4600000,
+        "material": "Gỗ Sồi Bắc Mỹ nguyên khối & Nệm da bò êm ái",
+        "dimensions": "42 x 42 x 75 cm (chiều cao ngồi)",
+        "rating": 4.7,
+        "reviewsCount": 19,
+        "badge": "Hot Deal",
+        "badgeType": "discount",
+        "image": "https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=800&q=80",
+        "description": "Dành riêng cho đảo bếp hoặc quầy bar gia đình. Chân ghế gỗ sồi vững chãi kết hợp chỗ để chân bọc đồng chống trầy."
+    },
+    {
+        "id": 24,
+        "name": "Kệ Giày Dép & Ghế Ngồi Thay Giày Entryway Bench",
+        "category": "decor",
+        "categoryId": 5,
+        "categoryName": "Đèn & Decor",
+        "price": 2850000,
+        "originalPrice": 3400000,
+        "material": "Gỗ Sồi tự nhiên & Đệm ngồi tháo rời giặt được",
+        "dimensions": "90 x 35 x 48 cm",
+        "rating": 4.9,
+        "reviewsCount": 58,
+        "badge": "Tiện Ích",
+        "badgeType": "new",
+        "image": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=800&q=80",
+        "description": "Món đồ không thể thiếu tại sảnh đón. Vừa là ghế êm ái ngồi xỏ giày, vừa chứa được 8-10 đôi giày dép gọn gàng ngăn nắp."
+    }
+];
+
 const AppState = {
-    products: [],
-    isLoading: true,
+    products: [...DEFAULT_PRODUCTS],
+    isLoading: false,
     currentCategory: "all",
     searchQuery: "",
     priceFilter: "all",
     sortOrder: "featured",
     cart: JSON.parse(localStorage.getItem("blanc_cart") || "[]"),
     orders: JSON.parse(localStorage.getItem("blanc_orders") || "[]"),
-    user: JSON.parse(localStorage.getItem("blanc_user") || "null")
+    user: JSON.parse(localStorage.getItem("blanc_user") || "null"),
+    adminOrders: [],
+    adminOrdersFilter: "all"
 };
 
 // Hàm định dạng tiền tệ VNĐ (ví dụ: 16.800.000₫)
@@ -124,6 +537,10 @@ function renderProducts() {
     const btnAdminAdd = document.getElementById("btn-admin-add-product");
     if (btnAdminAdd) {
         btnAdminAdd.style.display = isAdmin ? "inline-flex" : "none";
+    }
+    const btnAdminOrders = document.getElementById("btn-admin-manage-orders");
+    if (btnAdminOrders) {
+        btnAdminOrders.style.display = isAdmin ? "inline-flex" : "none";
     }
 
     grid.innerHTML = filtered.map(item => `
@@ -521,20 +938,35 @@ function closeAuthModal() {
 
 function updateAuthDisplay() {
     const label = document.getElementById("auth-label");
+    const btnAdminOrders = document.getElementById("btn-admin-manage-orders");
+    const ordersBtnText = document.getElementById("orders-btn-text");
+    const isAdmin = AppState.user && AppState.user.role === "admin";
+
     if (AppState.user) {
-        if (AppState.user.role === "admin") {
+        if (isAdmin) {
             label.textContent = "Admin";
             label.style.color = "#8c6d58";
             label.style.fontWeight = "700";
+            if (ordersBtnText) ordersBtnText.textContent = "QL Đơn";
+            if (btnAdminOrders) btnAdminOrders.style.display = "inline-flex";
+            refreshAdminPendingBadge();
         } else {
             label.textContent = AppState.user.username;
             label.style.color = "";
             label.style.fontWeight = "";
+            if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
+            if (btnAdminOrders) btnAdminOrders.style.display = "none";
+            const hBadge = document.getElementById("header-pending-badge");
+            if (hBadge) hBadge.style.display = "none";
         }
     } else {
         label.textContent = "Tài khoản";
         label.style.color = "";
         label.style.fontWeight = "";
+        if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
+        if (btnAdminOrders) btnAdminOrders.style.display = "none";
+        const hBadge = document.getElementById("header-pending-badge");
+        if (hBadge) hBadge.style.display = "none";
     }
 }
 
@@ -758,11 +1190,55 @@ document.addEventListener("DOMContentLoaded", () => {
         openOrderHistory();
     });
 
-    // 11. Order History Modal
-    document.getElementById("btn-open-orders").addEventListener("click", openOrderHistory);
-    document.getElementById("btn-close-orders").addEventListener("click", closeOrderHistory);
-    document.getElementById("orders-modal-overlay").addEventListener("click", (e) => {
-        if (e.target.id === "orders-modal-overlay") closeOrderHistory();
+    // 11. Order History / Admin Orders Modal
+    const btnOrders = document.getElementById("btn-open-orders");
+    if (btnOrders) {
+        btnOrders.addEventListener("click", () => {
+            if (AppState.user && AppState.user.role === "admin") {
+                openAdminOrdersModal();
+            } else {
+                openOrderHistory();
+            }
+        });
+    }
+
+    const btnCloseOrders = document.getElementById("btn-close-orders");
+    if (btnCloseOrders) btnCloseOrders.addEventListener("click", closeOrderHistory);
+
+    const ordersOverlay = document.getElementById("orders-modal-overlay");
+    if (ordersOverlay) {
+        ordersOverlay.addEventListener("click", (e) => {
+            if (e.target.id === "orders-modal-overlay") closeOrderHistory();
+        });
+    }
+
+    // 11.1 Admin Orders Management Listeners
+    const btnAdminOrders = document.getElementById("btn-admin-manage-orders");
+    if (btnAdminOrders) btnAdminOrders.addEventListener("click", openAdminOrdersModal);
+
+    const btnCloseAdminOrders = document.getElementById("btn-close-admin-orders");
+    if (btnCloseAdminOrders) btnCloseAdminOrders.addEventListener("click", closeAdminOrdersModal);
+
+    const adminOrdersOverlay = document.getElementById("admin-orders-modal-overlay");
+    if (adminOrdersOverlay) {
+        adminOrdersOverlay.addEventListener("click", (e) => {
+            if (e.target.id === "admin-orders-modal-overlay") closeAdminOrdersModal();
+        });
+    }
+
+    const btnRefreshOrders = document.getElementById("btn-refresh-admin-orders");
+    if (btnRefreshOrders) {
+        btnRefreshOrders.addEventListener("click", () => fetchAdminOrders(true));
+    }
+
+    const filterTabs = document.querySelectorAll(".admin-filter-tab");
+    filterTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            filterTabs.forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            AppState.adminOrdersFilter = tab.dataset.filter || "all";
+            renderAdminOrders();
+        });
     });
 
     // 12. Auth Modal
@@ -893,47 +1369,61 @@ document.addEventListener("DOMContentLoaded", () => {
 // 14. ADMIN SẢN PHẨM (THÊM, SỬA, XÓA MÓN HÀNG)
 // =============================================================================
 async function loadProductsFromBackend() {
+    let rawData = null;
     try {
-        const res = await fetch(`${API_BASE}/products`);
+        let res = await fetch(`${API_BASE}/products`);
+        if (!res.ok && (API_BASE === "http://localhost:8000" || API_BASE === "")) {
+            try {
+                const fallbackRes = await fetch("http://localhost:30080/products");
+                if (fallbackRes.ok) res = fallbackRes;
+            } catch (e) {}
+        }
         if (res.ok) {
-            const data = await res.json();
-            if (data && data.length > 0) {
-                const catSlugMap = {
-                    1: { slug: "living-room", name: "Phòng Khách" },
-                    2: { slug: "dining", name: "Bàn Ăn & Bếp" },
-                    3: { slug: "bedroom", name: "Phòng Ngủ" },
-                    4: { slug: "workspace", name: "Góc Làm Việc" },
-                    5: { slug: "decor", name: "Đèn & Decor" }
-                };
-                AppState.products = data.map(p => {
-                    const cInfo = catSlugMap[p.category_id] || { slug: "living-room", name: "Phòng Khách" };
-                    return {
-                        id: p.id,
-                        name: p.name,
-                        category: cInfo.slug,
-                        categoryId: p.category_id,
-                        categoryName: cInfo.name,
-                        price: p.price,
-                        originalPrice: p.original_price,
-                        material: p.material || "Gỗ tự nhiên cao cấp",
-                        dimensions: p.dimensions || "Tiêu chuẩn",
-                        rating: p.rating || 5.0,
-                        reviewsCount: p.reviews_count || 20,
-                        badge: p.badge || null,
-                        badgeType: p.badge_type || "featured",
-                        image: p.image_url,
-                        description: p.description || ""
-                    };
-                });
-                renderProducts();
-            }
+            rawData = await res.json();
         }
     } catch (err) {
-        console.log("Không thể kết nối Backend:", err);
-    } finally {
-        AppState.isLoading = false;
-        renderProducts();
+        if (API_BASE === "http://localhost:8000") {
+            try {
+                const fallbackRes = await fetch("http://localhost:30080/products");
+                if (fallbackRes.ok) rawData = await fallbackRes.json();
+            } catch (e) {}
+        }
     }
+
+    if (rawData && Array.isArray(rawData) && rawData.length > 0) {
+        const catSlugMap = {
+            1: { slug: "living-room", name: "Phòng Khách" },
+            2: { slug: "dining", name: "Bàn Ăn & Bếp" },
+            3: { slug: "bedroom", name: "Phòng Ngủ" },
+            4: { slug: "workspace", name: "Góc Làm Việc" },
+            5: { slug: "decor", name: "Đèn & Decor" }
+        };
+        AppState.products = rawData.map(p => {
+            const cInfo = catSlugMap[p.category_id] || { slug: "living-room", name: "Phòng Khách" };
+            return {
+                id: p.id,
+                name: p.name,
+                category: cInfo.slug,
+                categoryId: p.category_id,
+                categoryName: cInfo.name,
+                price: p.price,
+                originalPrice: p.original_price,
+                material: p.material || "Gỗ tự nhiên cao cấp",
+                dimensions: p.dimensions || "Tiêu chuẩn",
+                rating: (typeof p.rating === "number" && !isNaN(p.rating)) ? p.rating : 5.0,
+                reviewsCount: p.reviews_count || 20,
+                badge: p.badge || null,
+                badgeType: p.badge_type || "featured",
+                image: p.image_url,
+                description: p.description || ""
+            };
+        });
+    } else if (!AppState.products || AppState.products.length === 0) {
+        AppState.products = [...DEFAULT_PRODUCTS];
+    }
+
+    AppState.isLoading = false;
+    renderProducts();
 }
 
 function openAdminAddModal() {
@@ -1145,9 +1635,310 @@ async function handleAdminDeleteProduct(productId) {
     showToast(`Đã xóa món "${itemName}" khỏi Showroom.`);
 }
 
+// =============================================================================
+// 15. ADMIN QUẢN LÝ ĐƠN HÀNG (DUYỆT ĐƠN, ĐIỀU PHỐI, CẬP NHẬT TRẠNG THÁI)
+// =============================================================================
+async function fetchAdminOrders(showNotice = false) {
+    try {
+        const res = await fetch(`${API_BASE}/orders`);
+        if (res.ok) {
+            const data = await res.json();
+            AppState.adminOrders = data || [];
+        } else {
+            // Fallback lấy từ local nếu backend không phản hồi
+            AppState.adminOrders = [...AppState.orders];
+        }
+    } catch (err) {
+        console.log("Dùng danh sách đơn local:", err);
+        AppState.adminOrders = [...AppState.orders];
+    }
+
+    renderAdminOrders();
+    refreshAdminPendingBadge();
+
+    if (showNotice) {
+        showToast("Đã đồng bộ danh sách đơn hàng mới nhất!");
+    }
+}
+
+function refreshAdminPendingBadge() {
+    if (!AppState.user || AppState.user.role !== "admin") return;
+
+    // Đếm số đơn chờ duyệt
+    const list = AppState.adminOrders.length > 0 ? AppState.adminOrders : AppState.orders;
+    const pendingCount = list.filter(o => {
+        const st = (o.status || "").toLowerCase();
+        return st.includes("chuẩn bị") || st.includes("chờ") || st.includes("pending");
+    }).length;
+
+    const countPill = document.getElementById("admin-pending-count");
+    if (countPill) {
+        countPill.textContent = pendingCount;
+        countPill.style.display = pendingCount > 0 ? "inline-block" : "none";
+    }
+
+    const headerBadge = document.getElementById("header-pending-badge");
+    if (headerBadge) {
+        headerBadge.textContent = pendingCount;
+        headerBadge.style.display = pendingCount > 0 ? "inline-block" : "none";
+    }
+}
+
+function openAdminOrdersModal() {
+    if (!AppState.user || AppState.user.role !== "admin") {
+        openAuthModal();
+        return;
+    }
+
+    document.getElementById("admin-orders-modal-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+    fetchAdminOrders();
+}
+
+function closeAdminOrdersModal() {
+    document.getElementById("admin-orders-modal-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+function renderAdminOrders() {
+    const listContainer = document.getElementById("admin-orders-list-container");
+    if (!listContainer) return;
+
+    const orders = AppState.adminOrders.length > 0 ? AppState.adminOrders : AppState.orders;
+
+    // 1. Thống kê
+    const totalOrders = orders.length;
+    let pendingCount = 0;
+    let shippingCount = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+    let totalRevenue = 0;
+
+    orders.forEach(o => {
+        const st = (o.status || "").toLowerCase();
+        const amt = o.total_amount || o.totalAmount || 0;
+        
+        if (st.includes("hủy") || st.includes("cancel")) {
+            cancelledCount++;
+        } else {
+            totalRevenue += amt;
+            if (st.includes("chuẩn bị") || st.includes("chờ") || st.includes("pending")) {
+                pendingCount++;
+            } else if (st.includes("hoàn thành") || st.includes("completed")) {
+                completedCount++;
+            } else {
+                shippingCount++;
+            }
+        }
+    });
+
+    const elTotal = document.getElementById("stat-total-orders");
+    const elPending = document.getElementById("stat-pending-orders");
+    const elShipping = document.getElementById("stat-shipping-orders");
+    const elRevenue = document.getElementById("stat-total-revenue");
+
+    if (elTotal) elTotal.textContent = totalOrders;
+    if (elPending) elPending.textContent = pendingCount;
+    if (elShipping) elShipping.textContent = shippingCount;
+    if (elRevenue) elRevenue.textContent = formatVND(totalRevenue);
+
+    // Cập nhật số lượng trên các tab lọc
+    const tabAll = document.getElementById("count-tab-all");
+    const tabPend = document.getElementById("count-tab-pending");
+    const tabAppr = document.getElementById("count-tab-approved");
+    const tabComp = document.getElementById("count-tab-completed");
+    const tabCanc = document.getElementById("count-tab-cancelled");
+    if (tabAll) tabAll.textContent = totalOrders;
+    if (tabPend) tabPend.textContent = pendingCount;
+    if (tabAppr) tabAppr.textContent = shippingCount;
+    if (tabComp) tabComp.textContent = completedCount;
+    if (tabCanc) tabCanc.textContent = cancelledCount;
+
+    // 2. Lọc theo tab hiện tại
+    const filter = AppState.adminOrdersFilter || "all";
+    const filtered = orders.filter(o => {
+        const st = (o.status || "").toLowerCase();
+        if (filter === "pending") return st.includes("chuẩn bị") || st.includes("chờ") || st.includes("pending");
+        if (filter === "approved") return st.includes("duyệt") || st.includes("giao") || st.includes("shipping");
+        if (filter === "completed") return st.includes("hoàn thành") || st.includes("completed");
+        if (filter === "cancelled") return st.includes("hủy") || st.includes("cancel");
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `
+            <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+                <div style="font-size: 2.8rem; margin-bottom: 8px;">📋</div>
+                <h4>Không có đơn hàng nào trong mục này</h4>
+                <p style="font-size: 0.85rem;">Các đơn đặt hàng mới từ khách sẽ tự động hiển thị ở đây.</p>
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = filtered.map(order => {
+        const orderId = order.id || order.order_id || order.code;
+        const code = order.order_code || order.code || `BLC-${orderId}`;
+        const name = order.customer_name || order.customerName || "Khách hàng";
+        const phone = order.customer_phone || order.phone || "Chưa có SĐT";
+        const address = order.shipping_address || order.address || "Showroom";
+        const notes = order.notes || "";
+        const payment = order.payment_method || order.paymentMethod || "cod";
+        const paymentLabel = (payment === "cod" || payment === "Thanh toán COD khi nhận") 
+            ? "Thanh toán khi nhận hàng (COD)" 
+            : "Chuyển khoản QR ngân hàng";
+        const total = order.total_amount || order.totalAmount || 0;
+        const status = order.status || "Đang chuẩn bị hàng";
+        const items = order.items || [];
+
+        // Xác định class màu trạng thái
+        const stLower = status.toLowerCase();
+        let badgeClass = "status-pending";
+        if (stLower.includes("hủy") || stLower.includes("cancel")) {
+            badgeClass = "status-cancelled";
+        } else if (stLower.includes("hoàn thành") || stLower.includes("completed")) {
+            badgeClass = "status-completed";
+        } else if (stLower.includes("duyệt") || stLower.includes("giao") || stLower.includes("shipping")) {
+            badgeClass = "status-approved";
+        }
+
+        const isPending = stLower.includes("chuẩn bị") || stLower.includes("chờ") || stLower.includes("pending");
+        const isApprovedOrShipping = (stLower.includes("duyệt") || stLower.includes("giao")) && !stLower.includes("hoàn thành") && !stLower.includes("hủy");
+        const isCompleted = stLower.includes("hoàn thành");
+        const isCancelled = stLower.includes("hủy");
+
+        const timeStr = order.created_at 
+            ? new Date(order.created_at).toLocaleString('vi-VN') 
+            : (order.createdAt || "Vừa xong");
+
+        return `
+            <div class="admin-order-card" data-order-id="${orderId}">
+                <div class="admin-order-header">
+                    <div>
+                        <strong style="display: block; margin-bottom: 2px;">Mã Đơn: ${code}</strong>
+                        <span class="order-time">⏰ Thời gian đặt: ${timeStr}</span>
+                    </div>
+                    <span class="status-badge ${badgeClass}">${status}</span>
+                </div>
+
+                <div class="admin-customer-info">
+                    <div>
+                        <div><strong>Khách hàng:</strong> ${name}</div>
+                        <div><strong>Điện thoại:</strong> <a href="tel:${phone}" style="color: var(--accent); font-weight: 600;">${phone}</a></div>
+                        <div><strong>Thanh toán:</strong> ${paymentLabel}</div>
+                    </div>
+                    <div>
+                        <div><strong>Địa chỉ giao:</strong> ${address}</div>
+                        ${notes ? `<div><strong>Ghi chú:</strong> <em style="color: var(--text-muted);">${notes}</em></div>` : ''}
+                    </div>
+                </div>
+
+                <div class="admin-order-items-list">
+                    <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px;">Chi tiết món đồ (${items.length} sản phẩm):</div>
+                    ${items.map(it => `
+                        <div class="admin-order-item-row">
+                            <span>🛋️ ${it.product_name || it.name} &times; <strong>${it.quantity}</strong></span>
+                            <span style="font-weight: 600;">${formatVND(it.subtotal || (it.price * it.quantity))}</span>
+                        </div>
+                    `).join("")}
+                </div>
+
+                <div class="admin-order-footer">
+                    <div>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Tổng thanh toán: </span>
+                        <strong style="color: var(--accent); font-size: 1.25rem;">${formatVND(total)}</strong>
+                    </div>
+
+                    <div class="admin-order-actions">
+                        ${isPending ? `
+                            <button type="button" class="btn-order-approve" onclick="handleUpdateOrderStatus('${orderId}', 'Đã duyệt - Đang chuẩn bị giao', '${code}')" title="Xác nhận duyệt đơn và gửi tác vụ đến Worker service">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                Duyệt Đơn Hàng
+                            </button>
+                            <button type="button" class="btn-order-cancel" onclick="handleUpdateOrderStatus('${orderId}', 'Đã hủy đơn', '${code}')" title="Hủy đơn hàng">
+                                ✕ Hủy đơn
+                            </button>
+                        ` : ''}
+
+                        ${isApprovedOrShipping ? `
+                            <button type="button" class="btn-order-ship" onclick="handleUpdateOrderStatus('${orderId}', 'Đang giao hàng tận nhà', '${code}')" title="Chuyển sang trạng thái đang giao">
+                                🚚 Đang Giao Hàng
+                            </button>
+                            <button type="button" class="btn-order-complete" onclick="handleUpdateOrderStatus('${orderId}', 'Hoàn thành & Đã bàn giao', '${code}')" title="Xác nhận khách đã nhận đồ nội thất">
+                                ✓ Hoàn Thành
+                            </button>
+                            <button type="button" class="btn-order-cancel" onclick="handleUpdateOrderStatus('${orderId}', 'Đã hủy đơn', '${code}')">
+                                ✕ Hủy đơn
+                            </button>
+                        ` : ''}
+
+                        ${isCompleted ? `
+                            <span style="font-size: 0.85rem; color: #166534; font-weight: 600;">✓ Đơn hàng đã bàn giao thành công</span>
+                        ` : ''}
+
+                        ${isCancelled ? `
+                            <span style="font-size: 0.85rem; color: #991b1b; font-weight: 600;">✕ Đơn hàng đã bị hủy</span>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+async function handleUpdateOrderStatus(orderId, newStatus, orderCode = "") {
+    const dispCode = orderCode || `#${orderId}`;
+    try {
+        const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Admin-Demo": "true"
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (res.ok) {
+            const updated = await res.json();
+            // Cập nhật trong AppState.adminOrders
+            const idx = AppState.adminOrders.findIndex(o => (o.id == orderId || o.order_code == orderId));
+            if (idx > -1) {
+                AppState.adminOrders[idx].status = updated.status;
+            }
+        }
+    } catch (err) {
+        console.log("Cập nhật đơn cục bộ:", err);
+    }
+
+    // Cập nhật trong mảng adminOrders và local orders
+    AppState.adminOrders = AppState.adminOrders.map(o => {
+        if (o.id == orderId || o.order_code == orderId || o.code == orderId) {
+            return { ...o, status: newStatus };
+        }
+        return o;
+    });
+
+    AppState.orders = AppState.orders.map(o => {
+        if (o.id == orderId || o.order_code == orderId || o.code == orderId) {
+            return { ...o, status: newStatus };
+        }
+        return o;
+    });
+    localStorage.setItem("blanc_orders", JSON.stringify(AppState.orders));
+
+    renderAdminOrders();
+    refreshAdminPendingBadge();
+    showToast(`Đã duyệt đơn ${dispCode}: "${newStatus}"! Worker đang xử lý ngầm qua Redis.`);
+}
+
 // Global exposure
 window.openAdminAddModal = openAdminAddModal;
 window.openAdminEditModal = openAdminEditModal;
 window.handleAdminDeleteProduct = handleAdminDeleteProduct;
 window.closeAdminModal = closeAdminModal;
+window.openAdminOrdersModal = openAdminOrdersModal;
+window.closeAdminOrdersModal = closeAdminOrdersModal;
+window.handleUpdateOrderStatus = handleUpdateOrderStatus;
+window.fetchAdminOrders = fetchAdminOrders;
+
 

@@ -54,14 +54,17 @@
 
                 <!-- Order History Action -->
                 <button type="button" class="action-btn" id="btn-open-orders" title="Lịch sử đơn hàng">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span class="btn-text">Đơn mua</span>
+                    <div style="position: relative; display: inline-flex;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span class="admin-header-badge" id="header-pending-badge" style="display: none;">0</span>
+                    </div>
+                    <span class="btn-text" id="orders-btn-text">Đơn mua</span>
                 </button>
 
                 <!-- User Account Action -->
@@ -315,6 +318,12 @@
                             <option value="rating-desc">Đánh giá cao nhất</option>
                         </select>
                     </div>
+
+                    <!-- Admin Manage Orders Button (chỉ hiện khi đăng nhập Admin) -->
+                    <button type="button" class="btn-admin-manage-orders" id="btn-admin-manage-orders" style="display: none;" title="Quản lý & Duyệt đơn hàng trực tuyến">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Quản Lý Đơn Hàng <span class="admin-orders-badge" id="admin-pending-count" style="display: none;">0</span>
+                    </button>
 
                     <!-- Admin Add Product Button (chỉ hiện khi đăng nhập tài khoản Admin) -->
                     <button type="button" class="btn-admin-add-product" id="btn-admin-add-product" style="display: none;" title="Thêm món đồ nội thất mới">
@@ -584,6 +593,58 @@
             </div>
             <div class="orders-list" id="orders-list-container">
                 <!-- Orders dynamically injected via app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 5.5 Admin Orders Management Modal -->
+    <div class="modal-overlay" id="admin-orders-modal-overlay">
+        <div class="modal-dialog admin-orders-modal">
+            <button type="button" class="modal-close" id="btn-close-admin-orders">&times;</button>
+            <div class="admin-modal-header">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <span class="admin-badge-pill">QUẢN TRỊ VIÊN SHOWROOM</span>
+                    <button type="button" id="btn-refresh-admin-orders" class="btn-refresh-orders" title="Đồng bộ danh sách đơn mới nhất từ database">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Làm mới danh sách
+                    </button>
+                </div>
+                <h3>Quản Lý & Duyệt Đơn Hàng Trực Tuyến</h3>
+                <p>Tiếp nhận đơn hàng, duyệt giao hàng và kích hoạt tiến trình xử lý nền (Worker Service qua Redis)</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="admin-orders-stats-grid">
+                <div class="admin-stat-box">
+                    <span class="stat-label">Tổng số đơn</span>
+                    <strong class="stat-value" id="stat-total-orders">0</strong>
+                </div>
+                <div class="admin-stat-box stat-pending">
+                    <span class="stat-label">Chờ duyệt</span>
+                    <strong class="stat-value" id="stat-pending-orders">0</strong>
+                </div>
+                <div class="admin-stat-box stat-shipping">
+                    <span class="stat-label">Đang chuẩn bị / Giao</span>
+                    <strong class="stat-value" id="stat-shipping-orders">0</strong>
+                </div>
+                <div class="admin-stat-box stat-revenue">
+                    <span class="stat-label">Tổng doanh thu</span>
+                    <strong class="stat-value" id="stat-total-revenue">0₫</strong>
+                </div>
+            </div>
+
+            <!-- Filter Status Tabs -->
+            <div class="admin-orders-filter-bar">
+                <button type="button" class="admin-filter-tab active" data-filter="all">Tất cả đơn (<span id="count-tab-all">0</span>)</button>
+                <button type="button" class="admin-filter-tab" data-filter="pending">Chờ duyệt (<span id="count-tab-pending">0</span>)</button>
+                <button type="button" class="admin-filter-tab" data-filter="approved">Đã duyệt / Giao (<span id="count-tab-approved">0</span>)</button>
+                <button type="button" class="admin-filter-tab" data-filter="completed">Hoàn thành (<span id="count-tab-completed">0</span>)</button>
+                <button type="button" class="admin-filter-tab" data-filter="cancelled">Đã hủy (<span id="count-tab-cancelled">0</span>)</button>
+            </div>
+
+            <!-- Orders List -->
+            <div class="admin-orders-scroll-list" id="admin-orders-list-container">
+                <!-- Dynamically rendered by app.js -->
             </div>
         </div>
     </div>

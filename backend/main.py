@@ -35,6 +35,24 @@ def publish_order_task(order_code: str, customer_name: str, total_amount: float)
         logger.debug(f"Bỏ qua gửi Redis task: {e}")
 
 
+def publish_order_status_task(order_id: int, new_status: str):
+    """Đẩy tác vụ cập nhật trạng thái đơn hàng vào Redis queue để Worker service xử lý ngầm."""
+    try:
+        import redis
+        client = redis.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=1)
+        task_payload = {
+            "task": "update_order_status",
+            "data": {
+                "order_id": order_id,
+                "status": new_status
+            }
+        }
+        client.rpush("task_queue", json.dumps(task_payload))
+        logger.info(f"Đã gửi tác vụ cập nhật đơn #{order_id} sang '{new_status}' vào Redis queue.")
+    except Exception as e:
+        logger.debug(f"Bỏ qua gửi Redis task: {e}")
+
+
 try:
     from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
     from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
@@ -44,7 +62,8 @@ try:
         ProductUpdateSchema,
         ProductResponseModel,
         OrderCreateSchema,
-        OrderResponseModel
+        OrderResponseModel,
+        OrderStatusUpdateSchema
     )
     from auth import auth_router, verify_admin
 except ImportError:
@@ -56,7 +75,8 @@ except ImportError:
         ProductUpdateSchema,
         ProductResponseModel,
         OrderCreateSchema,
-        OrderResponseModel
+        OrderResponseModel,
+        OrderStatusUpdateSchema
     )
     from backend.auth import auth_router, verify_admin
 
@@ -301,8 +321,8 @@ def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
 
 @app.get("/orders", response_model=List[OrderResponseModel], tags=["Orders"])
 @app.get("/api/orders", response_model=List[OrderResponseModel], include_in_schema=False)
-def list_orders(db: Session = Depends(get_db)):
-    return db.query(OrderModelDB).order_by(OrderModelDB.id.desc()).all()
+def list_orders(limit: int = 50, db: Session = Depends(get_db)):
+    return db.query(OrderModelDB).order_by(OrderModelDB.id.desc()).limit(limit).all()
 
 
 @app.get("/orders/{order_code}", response_model=OrderResponseModel, tags=["Orders"])
@@ -312,6 +332,33 @@ def get_order(order_code: str, db: Session = Depends(get_db)):
     if not order:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy đơn hàng mã {order_code}")
     return order
+
+
+@app.patch("/orders/{order_id}/status", response_model=OrderResponseModel, tags=["Orders"])
+@app.patch("/api/orders/{order_id}/status", response_model=OrderResponseModel, include_in_schema=False)
+def update_order_status(
+    order_id: str,
+    data: OrderStatusUpdateSchema,
+    is_admin: bool = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """Cập nhật trạng thái duyệt đơn hàng (Yêu cầu quyền Admin hoặc Header X-Admin-Demo)."""
+    if order_id.isdigit():
+        order = db.query(OrderModelDB).filter(OrderModelDB.id == int(order_id)).first()
+    else:
+        order = db.query(OrderModelDB).filter(OrderModelDB.order_code == order_id).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy đơn hàng #{order_id}")
+
+    order.status = data.status
+    db.commit()
+    db.refresh(order)
+
+    # Đẩy tác vụ vào Redis queue để Worker service xử lý ngầm
+    publish_order_status_task(order.id, data.status)
+    return order
+
 
 
 # =============================================================================

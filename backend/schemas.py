@@ -178,3 +178,8 @@ class OrderResponseModel(BaseModel):
     items: List[OrderItemSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OrderStatusUpdateSchema(BaseModel):
+    status: str = Field(..., min_length=2, max_length=50, description="Trạng thái cập nhật (ví dụ: Đã duyệt, Đang giao hàng, Hoàn thành, Đã hủy)")
+
