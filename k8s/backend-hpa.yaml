@@ -10,11 +10,32 @@ spec:
     name: backend # Áp dụng cho deployment backend
   minReplicas: 2 # Số Pod tối thiểu duy trì hệ thống
   maxReplicas: 10 # Số Pod tối đa được phép tăng lên khi tải tăng cao
-  metrics: # Thiết lập ngưỡng đo lường
-    - type: Resource # Dựa trên tài nguyên (CPU/Memory)
+  metrics:
+    - type: Resource
       resource:
         name: cpu
         target:
-          type: Utilization # Sử dụng theo % tải
-          averageUtilization: 70 # Khi backend dùng hết 70% CPU → K8s tự động tạo thêm Pod
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 15 # Chỉ đợi 15 giây sau khi hết tải là bắt đầu hạ Pod ngay (tối ưu khi demo)
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 8
+          periodSeconds: 15
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 0 # Khi có tải là scale up tức thì
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
 

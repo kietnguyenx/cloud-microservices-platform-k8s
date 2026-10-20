@@ -421,7 +421,7 @@
                 <h4>Đăng Ký Nhận Bản Tin</h4>
                 <p>Nhận ngay voucher <strong>giảm 500.000₫</strong> cho đơn hàng nội thất đầu tiên của bạn.</p>
                 <form id="newsletter-form" class="newsletter-form"
-                    onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã đăng ký nhận bản tin MAISON\' DÉCOR!');">
+                    onsubmit="event.preventDefault(); showToast('Cảm ơn bạn đã đăng ký nhận bản tin MAISON\' DÉCOR!'); this.reset();">
                     <input type="email" placeholder="Nhập địa chỉ email của bạn..." required>
                     <button type="submit">Đăng Ký</button>
                 </form>

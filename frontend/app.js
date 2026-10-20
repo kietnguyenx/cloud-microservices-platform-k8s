@@ -803,7 +803,7 @@ function closeCheckout() {
     document.body.style.overflow = "";
 }
 
-function handleCheckoutSubmit(e) {
+async function handleCheckoutSubmit(e) {
     e.preventDefault();
 
     const name = document.getElementById("checkout-name").value.trim();
@@ -813,10 +813,43 @@ function handleCheckoutSubmit(e) {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
 
     const totalAmount = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const orderCode = "MSN-" + Math.floor(1000 + Math.random() * 9000);
+    let finalOrderCode = "BLC-" + Math.floor(1000 + Math.random() * 9000);
+    let createdBackendOrder = null;
 
+    // 1. Đồng bộ đơn hàng lên Backend Database
+    try {
+        const res = await fetch(`${API_BASE}/orders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                customer_name: name,
+                customer_phone: phone,
+                shipping_address: address,
+                notes: notes,
+                payment_method: paymentMethod,
+                items: AppState.cart.map(c => ({
+                    product_id: c.id,
+                    product_name: c.name,
+                    product_image: c.image || "",
+                    price: c.price,
+                    quantity: c.quantity,
+                    subtotal: c.price * c.quantity
+                }))
+            })
+        });
+        if (res.ok) {
+            createdBackendOrder = await res.json();
+            if (createdBackendOrder && createdBackendOrder.order_code) {
+                finalOrderCode = createdBackendOrder.order_code;
+            }
+        }
+    } catch (_) {}
+
+    // 2. Lưu vào local state
     const newOrder = {
-        code: orderCode,
+        id: createdBackendOrder ? createdBackendOrder.id : Date.now(),
+        code: finalOrderCode,
+        order_code: finalOrderCode,
         createdAt: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
         customerName: name,
         phone: phone,
@@ -832,37 +865,14 @@ function handleCheckoutSubmit(e) {
     AppState.orders.unshift(newOrder);
     localStorage.setItem("blanc_orders", JSON.stringify(AppState.orders));
 
-    // Đồng bộ đơn hàng lên Backend Database
-    try {
-        fetch(`${API_BASE}/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                customer_name: name,
-                customer_phone: phone,
-                shipping_address: address,
-                notes: notes,
-                payment_method: paymentMethod,
-                items: AppState.cart.map(c => ({
-                    product_id: c.id,
-                    product_name: c.name,
-                    product_image: c.image,
-                    price: c.price,
-                    quantity: c.quantity,
-                    subtotal: c.price * c.quantity
-                }))
-            })
-        }).catch(err => console.log("Đơn lưu local:", err));
-    } catch (_) {}
-
     // Dọn giỏ hàng
     AppState.cart = [];
     saveCart();
 
     closeCheckout();
 
-    // Hiển thị modal thành công
-    document.getElementById("success-order-code").textContent = orderCode;
+    // Hiển thị modal thành công với mã đơn đồng bộ
+    document.getElementById("success-order-code").textContent = finalOrderCode;
     document.getElementById("success-modal-overlay").classList.add("active");
 }
 
@@ -1543,9 +1553,7 @@ async function handleAdminProductSubmit(e) {
                 },
                 body: JSON.stringify(payload)
             });
-        } catch (err) {
-            console.log("Cập nhật cục bộ:", err);
-        }
+        } catch (_) {}
 
         const idx = AppState.products.findIndex(p => p.id === prodId);
         if (idx > -1) {
@@ -1582,9 +1590,7 @@ async function handleAdminProductSubmit(e) {
                 const created = await res.json();
                 if (created && created.id) newId = created.id;
             }
-        } catch (err) {
-            console.log("Thêm cục bộ:", err);
-        }
+        } catch (_) {}
 
         const newItem = {
             id: newId,
@@ -1626,9 +1632,7 @@ async function handleAdminDeleteProduct(productId) {
                 "X-Admin-Demo": "true"
             }
         });
-    } catch (err) {
-        console.log("Xóa cục bộ:", err);
-    }
+    } catch (_) {}
 
     AppState.products = AppState.products.filter(p => p.id !== productId);
     renderProducts();
@@ -1640,7 +1644,7 @@ async function handleAdminDeleteProduct(productId) {
 // =============================================================================
 async function fetchAdminOrders(showNotice = false) {
     try {
-        const res = await fetch(`${API_BASE}/orders`);
+        const res = await fetch(`${API_BASE}/orders?limit=100`);
         if (res.ok) {
             const data = await res.json();
             AppState.adminOrders = data || [];
@@ -1648,8 +1652,7 @@ async function fetchAdminOrders(showNotice = false) {
             // Fallback lấy từ local nếu backend không phản hồi
             AppState.adminOrders = [...AppState.orders];
         }
-    } catch (err) {
-        console.log("Dùng danh sách đơn local:", err);
+    } catch (_) {
         AppState.adminOrders = [...AppState.orders];
     }
 
@@ -1720,15 +1723,13 @@ function renderAdminOrders() {
         
         if (st.includes("hủy") || st.includes("cancel")) {
             cancelledCount++;
+        } else if (st.includes("hoàn thành") || st.includes("completed") || st.includes("bàn giao") || st.includes("thành công")) {
+            completedCount++;
+            totalRevenue += amt; // Chỉ cộng doanh thu khi đơn hàng giao thành công / hoàn thành
+        } else if (st.includes("chuẩn bị") || st.includes("chờ") || st.includes("pending")) {
+            pendingCount++;
         } else {
-            totalRevenue += amt;
-            if (st.includes("chuẩn bị") || st.includes("chờ") || st.includes("pending")) {
-                pendingCount++;
-            } else if (st.includes("hoàn thành") || st.includes("completed")) {
-                completedCount++;
-            } else {
-                shippingCount++;
-            }
+            shippingCount++;
         }
     });
 
@@ -1906,9 +1907,7 @@ async function handleUpdateOrderStatus(orderId, newStatus, orderCode = "") {
                 AppState.adminOrders[idx].status = updated.status;
             }
         }
-    } catch (err) {
-        console.log("Cập nhật đơn cục bộ:", err);
-    }
+    } catch (_) {}
 
     // Cập nhật trong mảng adminOrders và local orders
     AppState.adminOrders = AppState.adminOrders.map(o => {

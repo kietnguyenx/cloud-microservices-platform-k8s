@@ -38,33 +38,15 @@ class MicroservicesLoadTestUser(HttpUser):
         """Tác vụ duyệt danh mục phòng (Trọng số 4)."""
         self.client.get("/categories", name="2. GET /categories (Danh mục)")
 
-    @task(2)
-    def checkout_order(self):
-        """
-        Tác vụ đặt hàng (Trọng số 2 - Ghi dữ liệu vào PostgreSQL & kích hoạt Worker).
-        Tạo đơn hàng hoàn chỉnh với các item ngẫu nhiên.
-        """
-        random_id = random.randint(100, 9999)
-        price_val = float(random.randint(2000000, 18000000))
-        qty_val = random.randint(1, 3)
-        order_payload = {
-            "customer_name": f"Khách Hàng Test #{random_id}",
-            "customer_phone": f"09{random.randint(10000000, 99999999)}",
-            "shipping_address": f"{random.randint(1, 200)} Đường Thử Nghiệm Tải, Quận {random.randint(1, 12)}, TP.HCM",
-            "notes": "Đơn hàng tự động sinh ra bởi Locust Load Testing để kích hoạt HPA Auto-scaling",
-            "payment_method": random.choice(["cod", "qr_transfer"]),
-            "items": [
-                {
-                    "product_id": random.randint(1, 24),
-                    "product_name": f"Sản Phẩm Nội Thất Mẫu #{random.randint(1, 24)}",
-                    "product_image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
-                    "price": price_val,
-                    "quantity": qty_val,
-                    "subtotal": price_val * qty_val
-                }
-            ]
-        }
-        self.client.post("/orders", json=order_payload, name="3. POST /orders (Đặt hàng)")
+    # =========================================================================
+    # Đã tắt tạo đơn ảo tự động để:
+    # 1. Chuẩn với thực tế các sàn TMĐT (98% lưu lượng là lướt xem và tìm kiếm).
+    # 2. Giữ Database và màn hình Quản lý đơn hàng của Admin luôn sạch sẽ, gọn gàng.
+    # 3. Để bạn tự tay đặt đơn thật và duyệt đơn demo cho Giảng viên.
+    # =========================================================================
+    # @task(2)
+    # def checkout_order(self):
+    #     pass
 
     @task(1)
     def health_and_metrics_check(self):

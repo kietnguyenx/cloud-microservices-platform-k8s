@@ -1,4 +1,4 @@
-﻿# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *.class
@@ -12,3 +12,15 @@ backend/.env
 *.db
 *.sqlite3
 
+# Pytest & Testing Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary & Lock files (MS Office / Editors)
+~$*
+~$*.docx
+*.tmp
+*.bak
+*.swp
+*.swo

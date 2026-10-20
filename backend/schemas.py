@@ -78,10 +78,6 @@ class CategoryBase(BaseModel):
     image_url: Optional[str] = ""
 
 
-class CategoryCreateSchema(CategoryBase):
-    pass
-
-
 class CategoryResponseModel(CategoryBase):
     id: int
     created_at: Optional[datetime] = None

@@ -284,7 +284,13 @@ def delete_product(
 @app.post("/api/orders", response_model=OrderResponseModel, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
     total_amount = sum(item.price * item.quantity for item in data.items)
-    order_code = f"BLC-{random.randint(1000, 9999)}"
+    for _ in range(20):
+        order_code = f"BLC-{random.randint(1000, 9999)}"
+        if not db.query(OrderModelDB).filter(OrderModelDB.order_code == order_code).first():
+            break
+    else:
+        import time
+        order_code = f"BLC-{int(time.time()) % 100000}"
 
     new_order = OrderModelDB(
         order_code=order_code,
@@ -321,7 +327,7 @@ def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
 
 @app.get("/orders", response_model=List[OrderResponseModel], tags=["Orders"])
 @app.get("/api/orders", response_model=List[OrderResponseModel], include_in_schema=False)
-def list_orders(limit: int = 50, db: Session = Depends(get_db)):
+def list_orders(limit: int = 100, db: Session = Depends(get_db)):
     return db.query(OrderModelDB).order_by(OrderModelDB.id.desc()).limit(limit).all()
 
 
