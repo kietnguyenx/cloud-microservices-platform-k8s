@@ -1699,14 +1699,6 @@ button {
     gap: 16px;
 }
 
-.demo-account-hint {
-    background-color: var(--bg-main);
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    text-align: center;
-    color: var(--text-secondary);
-}
-
 /* ==========================================================================
    11. TOAST NOTIFICATIONS
    ========================================================================== */

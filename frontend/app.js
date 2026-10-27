@@ -1296,25 +1296,6 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast(isAdmin ? "Đã đăng nhập quyền QUẢN TRỊ VIÊN (Admin)!" : `Đăng nhập thành công! Chào mừng ${AppState.user.username}`);
     });
 
-    const btnQuickAdmin = document.getElementById("btn-quick-admin-login");
-    if (btnQuickAdmin) {
-        btnQuickAdmin.addEventListener("click", () => {
-            AppState.user = {
-                username: "admin",
-                email: "admin@maisondecor.vn",
-                full_name: "Quản Trị Viên Showroom (Admin)",
-                role: "admin",
-                phone: "0987 654 321",
-                address: "Showroom Maison Décor Luxury"
-            };
-            localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
-            updateAuthDisplay();
-            closeAuthModal();
-            renderProducts();
-            showToast("Đã kích hoạt quyền QUẢN TRỊ VIÊN (Admin)! Bạn có thể Thêm, Sửa, Xóa sản phẩm.");
-        });
-    }
-
     formRegister.addEventListener("submit", (e) => {
         e.preventDefault();
         const username = document.getElementById("reg-username").value.trim();
