@@ -423,6 +423,53 @@ const DEFAULT_PRODUCTS = [
     }
 ];
 
+// Khởi tạo mức tồn kho mặc định cho 24 sản phẩm
+const STOCK_MAP = {
+    1: 5, 2: 4, 3: 12, 4: 6, 5: 8, 6: 3, 7: 9, 8: 7, 9: 10, 10: 15,
+    11: 8, 12: 6, 13: 4, 14: 11, 15: 5, 16: 3, 17: 8, 18: 14, 19: 6,
+    20: 4, 21: 5, 22: 7, 23: 9, 24: 12
+};
+DEFAULT_PRODUCTS.forEach(p => {
+    p.stock = (typeof p.stock === "number") ? p.stock : (STOCK_MAP[p.id] || 10);
+});
+
+// Danh sách mã Voucher khuyến mãi hợp lệ
+const AVAILABLE_VOUCHERS = {
+    "MAISON500": { code: "MAISON500", discount: 500000, type: "fixed", minOrder: 1000000, desc: "Giảm 500.000₫ cho đơn từ 1.000.000₫" },
+    "WELCOME500": { code: "WELCOME500", discount: 500000, type: "fixed", minOrder: 1000000, desc: "Giảm 500.000₫ quà chào mừng bản tin" },
+    "BLANC10": { code: "BLANC10", discount: 0.10, type: "percent", maxDiscount: 1500000, desc: "Giảm 10% (tối đa 1.500.000₫)" },
+    "NOITHAT1M": { code: "NOITHAT1M", discount: 1000000, type: "fixed", minOrder: 10000000, desc: "Giảm 1.000.000₫ cho đơn từ 10.000.000₫" }
+};
+
+// Quản lý tài khoản đăng ký lưu trữ an toàn (hỗ trợ cả offline / fallback)
+function getRegisteredAccounts() {
+    let accounts = JSON.parse(localStorage.getItem("blanc_accounts") || "null");
+    if (!accounts || !Array.isArray(accounts)) {
+        accounts = [
+            {
+                username: "admin",
+                email: "admin@blanc.vn",
+                password: "admin123",
+                full_name: "Quản Trị Viên (Admin)",
+                role: "admin",
+                phone: "0987 654 321",
+                address: "Showroom Maison Decor"
+            },
+            {
+                username: "admin_maison",
+                email: "admin@maisondecor.vn",
+                password: "admin123",
+                full_name: "Quản Trị Viên Showroom",
+                role: "admin",
+                phone: "0987 654 321",
+                address: "Showroom Maison Decor"
+            }
+        ];
+        localStorage.setItem("blanc_accounts", JSON.stringify(accounts));
+    }
+    return accounts;
+}
+
 const AppState = {
     products: [...DEFAULT_PRODUCTS],
     isLoading: false,
@@ -433,6 +480,7 @@ const AppState = {
     cart: JSON.parse(localStorage.getItem("blanc_cart") || "[]"),
     orders: JSON.parse(localStorage.getItem("blanc_orders") || "[]"),
     user: JSON.parse(localStorage.getItem("blanc_user") || "null"),
+    appliedVoucher: JSON.parse(localStorage.getItem("blanc_voucher") || "null"),
     adminOrders: [],
     adminOrdersFilter: "all"
 };
@@ -443,6 +491,58 @@ function formatVND(amount) {
         style: 'currency',
         currency: 'VND'
     }).format(amount).replace('₫', '₫');
+}
+
+// Tính toán số tiền được giảm giá theo Voucher
+function calculateDiscount(subtotal) {
+    if (!AppState.appliedVoucher || subtotal <= 0) return 0;
+    const v = AppState.appliedVoucher;
+    if (v.minOrder && subtotal < v.minOrder) return 0;
+    if (v.type === "fixed") {
+        return Math.min(subtotal, v.discount);
+    } else if (v.type === "percent") {
+        const disc = Math.round(subtotal * v.discount);
+        return v.maxDiscount ? Math.min(disc, v.maxDiscount) : disc;
+    }
+    return 0;
+}
+
+// Áp dụng mã Voucher
+function applyVoucherCode(codeStr, silent = false) {
+    if (!codeStr || !codeStr.trim()) {
+        if (!silent) showToast("Vui lòng nhập mã giảm giá!", false);
+        return false;
+    }
+    const code = codeStr.trim().toUpperCase();
+    const voucher = AVAILABLE_VOUCHERS[code];
+    if (!voucher) {
+        if (!silent) showToast(`Mã giảm giá "${code}" không tồn tại hoặc đã hết hạn!`, false);
+        return false;
+    }
+
+    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    if (voucher.minOrder && subtotal > 0 && subtotal < voucher.minOrder) {
+        if (!silent) showToast(`Mã ${voucher.code} chỉ áp dụng cho đơn hàng từ ${formatVND(voucher.minOrder)} trở lên!`, false);
+        return false;
+    }
+
+    AppState.appliedVoucher = voucher;
+    localStorage.setItem("blanc_voucher", JSON.stringify(voucher));
+    renderCart();
+    updateCheckoutSummary();
+    if (!silent) showToast(`🎉 Áp dụng thành công mã ${voucher.code}: ${voucher.desc}!`);
+    return true;
+}
+
+// Hủy áp dụng mã Voucher
+function removeVoucher() {
+    AppState.appliedVoucher = null;
+    localStorage.removeItem("blanc_voucher");
+    const vInput = document.getElementById("cart-voucher-input");
+    if (vInput) vInput.value = "";
+    renderCart();
+    updateCheckoutSummary();
+    showToast("Đã hủy áp dụng mã voucher.");
 }
 
 // =============================================================================
@@ -563,14 +663,17 @@ function renderProducts() {
                     ${'★'.repeat(Math.floor(item.rating))}
                     <span>${item.rating} (${item.reviewsCount})</span>
                 </div>
+                <div class="product-stock-tag ${item.stock <= 0 ? 'stock-out' : (item.stock <= 3 ? 'stock-low' : 'stock-available')}">
+                    ${item.stock <= 0 ? '✕ Tạm hết hàng' : (item.stock <= 3 ? `⚡ Chỉ còn ${item.stock} cái trong kho` : `✓ Còn ${item.stock} sản phẩm`)}
+                </div>
                 <div class="product-footer">
                     <div class="product-price-box">
                         <span class="price-current">${formatVND(item.price)}</span>
                         ${item.originalPrice ? `<span class="price-old">${formatVND(item.originalPrice)}</span>` : ''}
                     </div>
-                    <button type="button" class="btn-add-cart" onclick="addToCart(${item.id})">
+                    <button type="button" class="btn-add-cart" onclick="addToCart(${item.id})" ${item.stock <= 0 ? 'disabled' : ''}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                        Thêm Vào Giỏ
+                        ${item.stock <= 0 ? 'Tạm Hết Hàng' : 'Thêm Vào Giỏ'}
                     </button>
                 </div>
             </div>
@@ -608,7 +711,21 @@ function addToCart(productId, quantity = 1) {
     const product = AppState.products.find(p => p.id === productId);
     if (!product) return;
 
+    const availableStock = (typeof product.stock === "number") ? product.stock : 10;
+    if (availableStock <= 0) {
+        showToast(`Rất tiếc! Món "${product.name}" hiện đã tạm hết hàng trong kho.`, false);
+        return;
+    }
+
     const existingIndex = AppState.cart.findIndex(item => item.id === productId);
+    const currentQtyInCart = existingIndex > -1 ? AppState.cart[existingIndex].quantity : 0;
+
+    // Kiểm tra không cho đặt vượt quá số lượng tồn kho
+    if (currentQtyInCart + quantity > availableStock) {
+        showToast(`Rất tiếc! Kho chỉ còn ${availableStock} sản phẩm "${product.name}" (trong giỏ của bạn đã có ${currentQtyInCart} món).`, false);
+        return;
+    }
+
     if (existingIndex > -1) {
         AppState.cart[existingIndex].quantity += quantity;
     } else {
@@ -619,6 +736,7 @@ function addToCart(productId, quantity = 1) {
             image: product.image,
             material: product.material,
             dimensions: product.dimensions,
+            stock: availableStock,
             quantity: quantity
         });
     }
@@ -631,6 +749,15 @@ function addToCart(productId, quantity = 1) {
 function updateCartQty(productId, delta) {
     const item = AppState.cart.find(i => i.id === productId);
     if (!item) return;
+
+    if (delta > 0) {
+        const product = AppState.products.find(p => p.id === productId);
+        const availableStock = product && (typeof product.stock === "number") ? product.stock : (item.stock || 10);
+        if (item.quantity + delta > availableStock) {
+            showToast(`Không thể thêm! Món này chỉ còn tối đa ${availableStock} sản phẩm trong kho.`, false);
+            return;
+        }
+    }
 
     item.quantity += delta;
     if (item.quantity <= 0) {
@@ -674,8 +801,35 @@ function renderCart() {
 
     footer.style.display = "block";
     const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateDiscount(subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
+
     subtotalEl.textContent = formatVND(subtotal);
-    totalEl.textContent = formatVND(subtotal);
+    totalEl.textContent = formatVND(finalTotal);
+
+    // Hiển thị dòng giảm giá nếu có voucher
+    const discountRow = document.getElementById("cart-discount-row");
+    const discountAmountEl = document.getElementById("cart-discount-amount");
+    const voucherAppliedRow = document.getElementById("voucher-applied-row");
+    const voucherTagText = document.getElementById("voucher-tag-text");
+
+    if (discountRow && discountAmountEl) {
+        if (discount > 0 && AppState.appliedVoucher) {
+            discountRow.style.display = "flex";
+            discountAmountEl.textContent = `-${formatVND(discount)}`;
+        } else {
+            discountRow.style.display = "none";
+        }
+    }
+
+    if (voucherAppliedRow && voucherTagText) {
+        if (AppState.appliedVoucher) {
+            voucherAppliedRow.style.display = "flex";
+            voucherTagText.textContent = `🏷️ Mã: ${AppState.appliedVoucher.code} (-${formatVND(discount)})`;
+        } else {
+            voucherAppliedRow.style.display = "none";
+        }
+    }
 
     body.innerHTML = AppState.cart.map(item => `
         <div class="cart-item-row">
@@ -719,6 +873,7 @@ function openProductModal(productId) {
     const product = AppState.products.find(p => p.id === productId);
     if (!product) return;
 
+    const availableStock = (typeof product.stock === "number") ? product.stock : 10;
     const modalContent = document.getElementById("product-modal-content");
     modalContent.innerHTML = `
         <div class="modal-img-col">
@@ -747,13 +902,15 @@ function openProductModal(productId) {
                 </div>
                 <div class="spec-row">
                     <span>Tình trạng kho:</span>
-                    <span style="color: #2b7a4b;">✓ Sẵn hàng tại Showroom</span>
+                    <span style="color: ${availableStock > 0 ? '#2b7a4b' : '#c93b2b'}; font-weight: 600;">
+                        ${availableStock > 0 ? `✓ Còn ${availableStock} sản phẩm trong kho` : '✕ Tạm hết hàng'}
+                    </span>
                 </div>
             </div>
             <div class="modal-actions-row">
-                <button type="button" class="btn-primary btn-block" onclick="addToCart(${product.id}); closeProductModal();">
+                <button type="button" class="btn-primary btn-block" onclick="addToCart(${product.id}); closeProductModal();" ${availableStock <= 0 ? 'disabled' : ''}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    Thêm Vào Giỏ Hàng
+                    ${availableStock > 0 ? 'Thêm Vào Giỏ Hàng' : 'Tạm Hết Hàng'}
                 </button>
             </div>
         </div>
@@ -778,14 +935,7 @@ function openCheckout() {
     }
 
     closeCart();
-
-    const countEl = document.getElementById("checkout-items-count");
-    const totalEl = document.getElementById("checkout-total-amount");
-    const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    countEl.textContent = `${totalCount} sản phẩm`;
-    totalEl.textContent = formatVND(subtotal);
+    updateCheckoutSummary();
 
     // Tự động điền thông tin nếu user đã đăng nhập
     if (AppState.user) {
@@ -798,6 +948,35 @@ function openCheckout() {
     document.body.style.overflow = "hidden";
 }
 
+function updateCheckoutSummary() {
+    const countEl = document.getElementById("checkout-items-count");
+    const subtotalEl = document.getElementById("checkout-subtotal-amount");
+    const discountRow = document.getElementById("checkout-discount-row");
+    const discountAmountEl = document.getElementById("checkout-discount-amount");
+    const discountLabelEl = document.getElementById("checkout-discount-label");
+    const totalEl = document.getElementById("checkout-total-amount");
+
+    const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateDiscount(subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
+
+    if (countEl) countEl.textContent = `${totalCount} sản phẩm`;
+    if (subtotalEl) subtotalEl.textContent = formatVND(subtotal);
+
+    if (discountRow && discountAmountEl) {
+        if (discount > 0 && AppState.appliedVoucher) {
+            discountRow.style.display = "flex";
+            discountAmountEl.textContent = `-${formatVND(discount)}`;
+            if (discountLabelEl) discountLabelEl.textContent = `Giảm giá (${AppState.appliedVoucher.code}):`;
+        } else {
+            discountRow.style.display = "none";
+        }
+    }
+
+    if (totalEl) totalEl.textContent = formatVND(finalTotal);
+}
+
 function closeCheckout() {
     document.getElementById("checkout-modal-overlay").classList.remove("active");
     document.body.style.overflow = "";
@@ -806,26 +985,44 @@ function closeCheckout() {
 async function handleCheckoutSubmit(e) {
     e.preventDefault();
 
+    // 1. Kiểm tra tồn kho trước khi đặt hàng
+    for (const item of AppState.cart) {
+        const prod = AppState.products.find(p => p.id === item.id);
+        const maxStock = prod && typeof prod.stock === "number" ? prod.stock : 10;
+        if (item.quantity > maxStock) {
+            showToast(`Sản phẩm "${item.name}" chỉ còn ${maxStock} cái trong kho (bạn chọn ${item.quantity}). Vui lòng điều chỉnh lại giỏ hàng!`, false);
+            return;
+        }
+    }
+
     const name = document.getElementById("checkout-name").value.trim();
     const phone = document.getElementById("checkout-phone").value.trim();
     const address = document.getElementById("checkout-address").value.trim();
     const notes = document.getElementById("checkout-notes").value.trim();
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
 
-    const totalAmount = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateDiscount(subtotal);
+    const totalAmount = Math.max(0, subtotal - discount);
+
     let finalOrderCode = "BLC-" + Math.floor(1000 + Math.random() * 9000);
     let createdBackendOrder = null;
 
-    // 1. Đồng bộ đơn hàng lên Backend Database
+    // Ghi chú kèm voucher nếu có
+    const voucherNote = AppState.appliedVoucher ? ` [Voucher ${AppState.appliedVoucher.code} -${formatVND(discount)}]` : "";
+    const fullNotes = (notes + voucherNote).trim();
+
+    // 2. Đồng bộ đơn hàng lên Backend Database
     try {
         const res = await fetch(`${API_BASE}/orders`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+                user_id: AppState.user ? (AppState.user.user_id || AppState.user.id || null) : null,
                 customer_name: name,
                 customer_phone: phone,
                 shipping_address: address,
-                notes: notes,
+                notes: fullNotes,
                 payment_method: paymentMethod,
                 items: AppState.cart.map(c => ({
                     product_id: c.id,
@@ -845,7 +1042,16 @@ async function handleCheckoutSubmit(e) {
         }
     } catch (_) {}
 
-    // 2. Lưu vào local state
+    // 3. Trừ tồn kho trong AppState.products và re-render
+    AppState.cart.forEach(item => {
+        const prod = AppState.products.find(p => p.id === item.id);
+        if (prod && typeof prod.stock === "number") {
+            prod.stock = Math.max(0, prod.stock - item.quantity);
+        }
+    });
+    renderProducts();
+
+    // 4. Lưu vào danh sách đơn cá nhân (AppState.orders)
     const newOrder = {
         id: createdBackendOrder ? createdBackendOrder.id : Date.now(),
         code: finalOrderCode,
@@ -854,8 +1060,11 @@ async function handleCheckoutSubmit(e) {
         customerName: name,
         phone: phone,
         address: address,
-        notes: notes,
+        notes: fullNotes,
         paymentMethod: paymentMethod === "cod" ? "Thanh toán COD khi nhận" : "Chuyển khoản QR",
+        subtotal: subtotal,
+        discount: discount,
+        voucher: AppState.appliedVoucher ? AppState.appliedVoucher.code : null,
         totalAmount: totalAmount,
         status: "Đang chuẩn bị hàng",
         statusClass: "status-shipping",
@@ -865,9 +1074,11 @@ async function handleCheckoutSubmit(e) {
     AppState.orders.unshift(newOrder);
     localStorage.setItem("blanc_orders", JSON.stringify(AppState.orders));
 
-    // Dọn giỏ hàng
+    // Reset giỏ hàng và voucher
     AppState.cart = [];
     saveCart();
+    AppState.appliedVoucher = null;
+    localStorage.removeItem("blanc_voucher");
 
     closeCheckout();
 
@@ -881,6 +1092,10 @@ async function handleCheckoutSubmit(e) {
 // =============================================================================
 function openOrderHistory() {
     const listContainer = document.getElementById("orders-list-container");
+    const btnSwitchToAdmin = document.getElementById("btn-switch-to-admin-orders");
+    if (btnSwitchToAdmin) {
+        btnSwitchToAdmin.style.display = (AppState.user && AppState.user.role === "admin") ? "inline-flex" : "none";
+    }
 
     if (AppState.orders.length === 0) {
         listContainer.innerHTML = `
@@ -895,18 +1110,22 @@ function openOrderHistory() {
             <div class="order-card-row">
                 <div class="order-card-header">
                     <div>
-                        <strong>Mã đơn: ${order.code}</strong>
+                        <strong>Mã đơn: ${order.code || order.order_code}</strong>
                         <div style="font-size: 0.78rem; color: var(--text-muted);">${order.createdAt}</div>
                     </div>
-                    <span class="status-badge ${order.statusClass}">${order.status}</span>
+                    <span class="status-badge ${order.statusClass || 'status-shipping'}">${order.status}</span>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0;">
                     <div><strong>Giao đến:</strong> ${order.customerName} &bull; ${order.phone}</div>
                     <div><strong>Địa chỉ:</strong> ${order.address}</div>
                     <div><strong>Thanh toán:</strong> ${order.paymentMethod}</div>
+                    ${order.voucher ? `<div style="color: #059669; font-weight: 500;"><strong>Mã Voucher:</strong> ${order.voucher} (-${formatVND(order.discount || 0)})</div>` : ''}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); background: var(--bg-surface); padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
+                    ${order.items.map(i => `• ${i.name || i.product_name} (SL: ${i.quantity})`).join("<br>")}
                 </div>
                 <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.85rem;">${order.items.length} món đồ nội thất</span>
+                    <span style="font-size: 0.85rem;">${order.items.reduce((sum, i) => sum + (i.quantity || 1), 0)} món đồ nội thất</span>
                     <strong style="color: var(--accent); font-size: 1.05rem;">${formatVND(order.totalAmount)}</strong>
                 </div>
             </div>
@@ -927,8 +1146,7 @@ function closeOrderHistory() {
 // =============================================================================
 function openAuthModal() {
     if (AppState.user) {
-        const roleDesc = AppState.user.role === "admin" ? " [QUẢN TRỊ VIÊN ADMIN]" : "";
-        if (confirm(`Chào bạn ${AppState.user.full_name || AppState.user.username}${roleDesc}!\n\nBạn có muốn đăng xuất tài khoản?`)) {
+        if (confirm(`Chào bạn ${AppState.user.full_name || AppState.user.username}!\n\nBạn có muốn đăng xuất tài khoản?`)) {
             AppState.user = null;
             localStorage.removeItem("blanc_user");
             updateAuthDisplay();
@@ -952,19 +1170,20 @@ function updateAuthDisplay() {
     const ordersBtnText = document.getElementById("orders-btn-text");
     const isAdmin = AppState.user && AppState.user.role === "admin";
 
+    // "Đơn mua" luôn giữ nguyên tên cho tất cả người dùng để cả khách và admin đều có thể xem lịch sử mua cá nhân
+    if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
+
     if (AppState.user) {
         if (isAdmin) {
             label.textContent = "Admin";
             label.style.color = "#8c6d58";
             label.style.fontWeight = "700";
-            if (ordersBtnText) ordersBtnText.textContent = "QL Đơn";
             if (btnAdminOrders) btnAdminOrders.style.display = "inline-flex";
             refreshAdminPendingBadge();
         } else {
             label.textContent = AppState.user.username;
             label.style.color = "";
             label.style.fontWeight = "";
-            if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
             if (btnAdminOrders) btnAdminOrders.style.display = "none";
             const hBadge = document.getElementById("header-pending-badge");
             if (hBadge) hBadge.style.display = "none";
@@ -973,7 +1192,6 @@ function updateAuthDisplay() {
         label.textContent = "Tài khoản";
         label.style.color = "";
         label.style.fontWeight = "";
-        if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
         if (btnAdminOrders) btnAdminOrders.style.display = "none";
         const hBadge = document.getElementById("header-pending-badge");
         if (hBadge) hBadge.style.display = "none";
@@ -1203,13 +1421,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 11. Order History / Admin Orders Modal
     const btnOrders = document.getElementById("btn-open-orders");
     if (btnOrders) {
-        btnOrders.addEventListener("click", () => {
-            if (AppState.user && AppState.user.role === "admin") {
-                openAdminOrdersModal();
-            } else {
-                openOrderHistory();
-            }
-        });
+        btnOrders.addEventListener("click", openOrderHistory);
     }
 
     const btnCloseOrders = document.getElementById("btn-close-orders");
@@ -1219,6 +1431,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ordersOverlay) {
         ordersOverlay.addEventListener("click", (e) => {
             if (e.target.id === "orders-modal-overlay") closeOrderHistory();
+        });
+    }
+
+    // Nút chuyển đổi giữa Lịch sử đơn mua cá nhân và Quản lý đơn showroom
+    const btnSwitchToMyOrders = document.getElementById("btn-switch-to-my-orders");
+    if (btnSwitchToMyOrders) {
+        btnSwitchToMyOrders.addEventListener("click", () => {
+            closeAdminOrdersModal();
+            openOrderHistory();
+        });
+    }
+
+    const btnSwitchToAdminOrders = document.getElementById("btn-switch-to-admin-orders");
+    if (btnSwitchToAdminOrders) {
+        btnSwitchToAdminOrders.addEventListener("click", () => {
+            closeOrderHistory();
+            openAdminOrdersModal();
         });
     }
 
@@ -1251,6 +1480,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // 11.2 Voucher Form & Newsletter Listeners
+    const btnApplyVoucher = document.getElementById("btn-apply-voucher");
+    if (btnApplyVoucher) {
+        btnApplyVoucher.addEventListener("click", () => {
+            const input = document.getElementById("cart-voucher-input");
+            applyVoucherCode(input ? input.value : "");
+        });
+    }
+
+    const inputVoucher = document.getElementById("cart-voucher-input");
+    if (inputVoucher) {
+        inputVoucher.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                applyVoucherCode(inputVoucher.value);
+            }
+        });
+    }
+
+    const btnRemoveVoucher = document.getElementById("btn-remove-voucher");
+    if (btnRemoveVoucher) {
+        btnRemoveVoucher.addEventListener("click", removeVoucher);
+    }
+
+    const newsletterForm = document.getElementById("newsletter-form");
+    if (newsletterForm) {
+        newsletterForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById("newsletter-email");
+            const email = emailInput ? emailInput.value.trim() : "";
+            applyVoucherCode("MAISON500", true);
+            showToast(`🎉 Cảm ơn ${email || 'bạn'}! Nhận ngay voucher giảm 500.000₫ (Mã: MAISON500 - Đã tự động áp dụng vào giỏ hàng)!`);
+            if (emailInput) emailInput.value = "";
+        });
+    }
+
     // 12. Auth Modal
     document.getElementById("btn-open-auth").addEventListener("click", openAuthModal);
     document.getElementById("btn-close-auth").addEventListener("click", closeAuthModal);
@@ -1277,31 +1542,176 @@ document.addEventListener("DOMContentLoaded", () => {
         formRegister.style.display = "flex";
     });
 
-    formLogin.addEventListener("submit", (e) => {
+    // Xử lý Đăng Nhập tài khoản với xác thực chuẩn xác
+    formLogin.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const email = document.getElementById("login-email").value.trim().toLowerCase();
-        const isAdmin = email === "admin@maisondecor.vn" || email === "admin@blanc.vn" || email === "admin";
+        const emailInput = document.getElementById("login-email").value.trim();
+        const passwordInput = document.getElementById("login-password").value;
+        const emailLower = emailInput.toLowerCase();
+
+        if (!emailInput || !passwordInput) {
+            showToast("Vui lòng điền đầy đủ tài khoản và mật khẩu!", false);
+            return;
+        }
+
+        const isAdmin = (emailLower === "admin@maisondecor.vn" || emailLower === "admin@blanc.vn" || emailLower === "admin" || emailLower === "admin_maison");
+
+        // 1. Kiểm tra tài khoản Quản Trị Viên (Admin)
+        if (isAdmin) {
+            if (passwordInput !== "admin123") {
+                showToast("❌ Mật khẩu tài khoản Quản Trị Viên không chính xác!", false);
+                return;
+            }
+
+            AppState.user = {
+                username: "admin",
+                email: emailLower.includes("@") ? emailLower : "admin@maisondecor.vn",
+                full_name: "Quản Trị Viên (Admin)",
+                role: "admin",
+                phone: "0987 654 321",
+                address: "Showroom Maison Decor"
+            };
+            localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+            updateAuthDisplay();
+            closeAuthModal();
+            renderProducts();
+            showToast("Đã đăng nhập quyền QUẢN TRỊ VIÊN (Admin)!");
+            return;
+        }
+
+        // 2. Thử xác thực với Backend API
+        let backendUser = null;
+        try {
+            const res = await fetch(`${API_BASE}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: emailInput, password: passwordInput })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.user) {
+                    backendUser = data.user;
+                    if (data.access_token) localStorage.setItem("blanc_token", data.access_token);
+                }
+            } else if (res.status === 400 || res.status === 401) {
+                const errJson = await res.json().catch(() => ({}));
+                showToast(`❌ ${errJson.detail || "Email hoặc mật khẩu không chính xác!"}`, false);
+                return;
+            }
+        } catch (_) {}
+
+        if (backendUser) {
+            AppState.user = backendUser;
+            localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+            updateAuthDisplay();
+            closeAuthModal();
+            renderProducts();
+            showToast(`Đăng nhập thành công! Chào mừng ${AppState.user.full_name || AppState.user.username}`);
+            return;
+        }
+
+        // 3. Fallback xác thực danh sách tài khoản đã đăng ký trong local storage
+        const accounts = getRegisteredAccounts();
+        const found = accounts.find(a => 
+            (a.email && a.email.toLowerCase() === emailLower) || 
+            (a.username && a.username.toLowerCase() === emailLower)
+        );
+
+        if (!found) {
+            showToast("❌ Tài khoản không tồn tại! Vui lòng bấm 'Đăng Ký Mới'.", false);
+            return;
+        }
+
+        if (found.password !== passwordInput) {
+            showToast("❌ Mật khẩu không chính xác! Vui lòng kiểm tra lại.", false);
+            return;
+        }
+
         AppState.user = {
-            username: isAdmin ? "admin" : email.split("@")[0],
-            email: email,
-            full_name: isAdmin ? "Quản Trị Viên (Admin)" : email.split("@")[0].toUpperCase(),
-            role: isAdmin ? "admin" : "customer",
-            phone: "0908 123 456",
-            address: "Hà Nội"
+            username: found.username,
+            email: found.email,
+            full_name: found.full_name || found.username,
+            role: found.role || "customer",
+            phone: found.phone || "",
+            address: found.address || ""
         };
         localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
         updateAuthDisplay();
         closeAuthModal();
         renderProducts();
-        showToast(isAdmin ? "Đã đăng nhập quyền QUẢN TRỊ VIÊN (Admin)!" : `Đăng nhập thành công! Chào mừng ${AppState.user.username}`);
+        showToast(`Đăng nhập thành công! Chào mừng ${AppState.user.full_name || AppState.user.username}`);
     });
 
-    formRegister.addEventListener("submit", (e) => {
+    // Xử lý Đăng Ký tài khoản mới và chống đăng ký trùng lặp
+    formRegister.addEventListener("submit", async (e) => {
         e.preventDefault();
         const username = document.getElementById("reg-username").value.trim();
         const name = document.getElementById("reg-name").value.trim();
         const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const emailLower = email.toLowerCase();
+        const usernameLower = username.toLowerCase();
 
+        if (username.length < 3) {
+            showToast("Tên người dùng phải có ít nhất 3 ký tự!", false);
+            return;
+        }
+        if (password.length < 6) {
+            showToast("Mật khẩu phải có ít nhất 6 ký tự!", false);
+            return;
+        }
+
+        // 1. Chống đăng ký tài khoản trùng tên Admin
+        if (usernameLower === "admin" || emailLower === "admin@blanc.vn" || emailLower === "admin@maisondecor.vn") {
+            showToast("❌ Tên đăng nhập hoặc email này đã được sử dụng!", false);
+            return;
+        }
+
+        // 2. Chống đăng ký tài khoản đã tồn tại trong local database
+        const accounts = getRegisteredAccounts();
+        const existed = accounts.find(a => 
+            (a.email && a.email.toLowerCase() === emailLower) || 
+            (a.username && a.username.toLowerCase() === usernameLower)
+        );
+
+        if (existed) {
+            showToast("❌ Email hoặc tên người dùng này đã được đăng ký! Vui lòng chuyển sang 'Đăng Nhập'.", false);
+            return;
+        }
+
+        // 3. Đăng ký lên Backend API
+        try {
+            const res = await fetch(`${API_BASE}/signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password,
+                    full_name: name
+                })
+            });
+            if (!res.ok && res.status === 400) {
+                const errData = await res.json().catch(() => ({}));
+                showToast(`❌ ${errData.detail || "Tài khoản hoặc email này đã tồn tại!"}`, false);
+                return;
+            }
+        } catch (_) {}
+
+        // 4. Lưu tài khoản mới vào cơ sở dữ liệu tài khoản
+        const newAccount = {
+            username: username,
+            email: email,
+            password: password,
+            full_name: name,
+            role: "customer",
+            phone: "",
+            address: ""
+        };
+        accounts.push(newAccount);
+        localStorage.setItem("blanc_accounts", JSON.stringify(accounts));
+
+        // 5. Đăng nhập ngay cho người dùng
         AppState.user = {
             username: username,
             email: email,
@@ -1311,10 +1721,11 @@ document.addEventListener("DOMContentLoaded", () => {
             address: ""
         };
         localStorage.setItem("blanc_user", JSON.stringify(AppState.user));
+
         updateAuthDisplay();
         closeAuthModal();
         renderProducts();
-        showToast(`Đăng ký thành công! Chào mừng ${username}`);
+        showToast(`🎉 Đăng ký thành công! Chào mừng ${name || username}`);
     });
 
     // 13. Admin Management Triggers
@@ -1399,6 +1810,7 @@ async function loadProductsFromBackend() {
                 categoryName: cInfo.name,
                 price: p.price,
                 originalPrice: p.original_price,
+                stock: (typeof p.stock === "number") ? p.stock : (STOCK_MAP[p.id] || 10),
                 material: p.material || "Gỗ tự nhiên cao cấp",
                 dimensions: p.dimensions || "Tiêu chuẩn",
                 rating: (typeof p.rating === "number" && !isNaN(p.rating)) ? p.rating : 5.0,

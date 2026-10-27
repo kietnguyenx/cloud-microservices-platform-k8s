@@ -52,19 +52,29 @@
                         style="display: none;">&times;</button>
                 </div>
 
-                <!-- Order History Action -->
-                <button type="button" class="action-btn" id="btn-open-orders" title="Lịch sử đơn hàng">
+                <!-- Order History Action (Cho cả Khách và Admin xem đơn mình đã mua) -->
+                <button type="button" class="action-btn" id="btn-open-orders" title="Lịch sử đơn mua của bạn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span class="btn-text" id="orders-btn-text">Đơn mua</span>
+                </button>
+
+                <!-- Admin Showroom Orders Management (Chỉ xuất hiện khi là Admin) -->
+                <button type="button" class="action-btn admin-orders-nav-btn" id="btn-admin-manage-orders" title="Quản lý & duyệt toàn bộ đơn showroom" style="display: none; border-color: #8c6d58; color: #8c6d58;">
                     <div style="position: relative; display: inline-flex;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
                         </svg>
                         <span class="admin-header-badge" id="header-pending-badge" style="display: none;">0</span>
                     </div>
-                    <span class="btn-text" id="orders-btn-text">Đơn mua</span>
+                    <span class="btn-text" style="font-weight: 700;">QL Đơn</span>
                 </button>
 
                 <!-- User Account Action -->
@@ -420,10 +430,9 @@
             <div class="footer-col newsletter-col">
                 <h4>Đăng Ký Nhận Bản Tin</h4>
                 <p>Nhận ngay voucher <strong>giảm 500.000₫</strong> cho đơn hàng nội thất đầu tiên của bạn.</p>
-                <form id="newsletter-form" class="newsletter-form"
-                    onsubmit="event.preventDefault(); showToast('Cảm ơn bạn đã đăng ký nhận bản tin MAISON\' DÉCOR!'); this.reset();">
-                    <input type="email" placeholder="Nhập địa chỉ email của bạn..." required>
-                    <button type="submit">Đăng Ký</button>
+                <form id="newsletter-form" class="newsletter-form">
+                    <input type="email" id="newsletter-email" placeholder="Nhập địa chỉ email của bạn..." required>
+                    <button type="submit" id="btn-subscribe-newsletter">Đăng Ký</button>
                 </form>
             </div>
         </div>
@@ -458,9 +467,31 @@
             </div>
 
             <div class="drawer-footer" id="cart-drawer-footer">
+                <!-- Voucher Promotion Box -->
+                <div class="cart-voucher-box">
+                    <label class="voucher-label" for="cart-voucher-input">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        Mã giảm giá / Voucher:
+                    </label>
+                    <div class="voucher-input-group">
+                        <input type="text" id="cart-voucher-input" placeholder="Nhập mã (VD: MAISON500)..." autocomplete="off">
+                        <button type="button" id="btn-apply-voucher" class="btn-voucher-apply">Áp Dụng</button>
+                    </div>
+                    <div id="voucher-applied-row" class="voucher-applied-row" style="display: none;">
+                        <span class="voucher-tag-pill">
+                            <span id="voucher-tag-text">🏷️ Giảm 500.000₫ (MAISON500)</span>
+                            <button type="button" id="btn-remove-voucher" class="btn-remove-voucher" title="Hủy áp dụng mã">&times;</button>
+                        </span>
+                    </div>
+                </div>
+
                 <div class="summary-line">
                     <span>Tạm tính:</span>
                     <strong class="subtotal-amount" id="cart-subtotal">0₫</strong>
+                </div>
+                <div class="summary-line text-success" id="cart-discount-row" style="display: none; color: #059669;">
+                    <span>Giảm giá Voucher:</span>
+                    <strong id="cart-discount-amount">-0₫</strong>
                 </div>
                 <div class="summary-line text-muted">
                     <span>Phí vận chuyển:</span>
@@ -551,6 +582,14 @@
                         <span>Số lượng sản phẩm:</span>
                         <strong id="checkout-items-count">0 món</strong>
                     </div>
+                    <div class="summary-line">
+                        <span>Tạm tính:</span>
+                        <strong id="checkout-subtotal-amount">0₫</strong>
+                    </div>
+                    <div class="summary-line text-success" id="checkout-discount-row" style="display: none; color: #059669;">
+                        <span id="checkout-discount-label">Giảm giá Voucher:</span>
+                        <strong id="checkout-discount-amount">-0₫</strong>
+                    </div>
                     <div class="summary-line total-line">
                         <span>Tổng tiền cần thanh toán:</span>
                         <strong class="total-amount" id="checkout-total-amount">0₫</strong>
@@ -588,8 +627,15 @@
         <div class="modal-dialog orders-modal">
             <button type="button" class="modal-close" id="btn-close-orders">&times;</button>
             <div class="orders-modal-header">
-                <h3>Lịch Sử Đơn Mua Nội Thất</h3>
-                <p>Theo dõi tiến trình xử lý và giao hàng các đơn của bạn</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h3>Lịch Sử Đơn Mua Nội Thất</h3>
+                        <p>Theo dõi tiến trình xử lý và giao hàng các đơn của bạn</p>
+                    </div>
+                    <button type="button" id="btn-switch-to-admin-orders" class="btn-refresh-orders" style="display: none; background: #8c6d58; color: #fff; border-color: #8c6d58;">
+                        ⚙️ Mở Quản Lý Duyệt Đơn Showroom
+                    </button>
+                </div>
             </div>
             <div class="orders-list" id="orders-list-container">
                 <!-- Orders dynamically injected via app.js -->
@@ -603,7 +649,12 @@
             <button type="button" class="modal-close" id="btn-close-admin-orders">&times;</button>
             <div class="admin-modal-header">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                    <span class="admin-badge-pill">QUẢN TRỊ VIÊN SHOWROOM</span>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span class="admin-badge-pill">QUẢN TRỊ VIÊN SHOWROOM</span>
+                        <button type="button" id="btn-switch-to-my-orders" class="btn-refresh-orders" style="background: #fff; color: var(--text-primary);" title="Xem danh sách đơn do chính bạn đã đặt">
+                            🛍️ Đơn mua cá nhân của tôi
+                        </button>
+                    </div>
                     <button type="button" id="btn-refresh-admin-orders" class="btn-refresh-orders" title="Đồng bộ danh sách đơn mới nhất từ database">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         Làm mới danh sách

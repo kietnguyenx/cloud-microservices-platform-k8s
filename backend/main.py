@@ -283,6 +283,16 @@ def delete_product(
 @app.post("/orders", response_model=OrderResponseModel, status_code=status.HTTP_201_CREATED, tags=["Orders"])
 @app.post("/api/orders", response_model=OrderResponseModel, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
+    # 1. Kiểm tra tồn kho từng sản phẩm
+    for item in data.items:
+        prod = db.query(ProductModelDB).filter(ProductModelDB.id == item.product_id).first()
+        if prod:
+            if prod.stock < item.quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sản phẩm '{prod.name}' chỉ còn {prod.stock} món trong kho (bạn đặt {item.quantity} món)."
+                )
+
     total_amount = sum(item.price * item.quantity for item in data.items)
     for _ in range(20):
         order_code = f"BLC-{random.randint(1000, 9999)}"
@@ -318,6 +328,10 @@ def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
             subtotal=item.price * item.quantity
         )
         db.add(order_item)
+        # Giảm số lượng tồn kho tương ứng
+        prod = db.query(ProductModelDB).filter(ProductModelDB.id == item.product_id).first()
+        if prod:
+            prod.stock = max(0, prod.stock - item.quantity)
 
     db.commit()
     db.refresh(new_order)

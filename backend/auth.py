@@ -229,7 +229,9 @@ def signup_user(data: UserModelPydantic, db: Session = Depends(get_db)):
 @auth_router.post("/login", summary="Đăng nhập tài khoản và nhận JWT token", response_model=LoginResponseModel)
 @auth_router.post("/login/", include_in_schema=False)
 def login(form_data: FormLoginSchema, db: Session = Depends(get_db)):
-    user = db.query(UserModelDB).filter(UserModelDB.email == form_data.email).first()
+    user = db.query(UserModelDB).filter(
+        (UserModelDB.email == form_data.email) | (UserModelDB.username == form_data.email)
+    ).first()
     if not user or not auth_handler.verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Email hoặc mật khẩu không chính xác.")
 

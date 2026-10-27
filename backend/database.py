@@ -518,21 +518,28 @@ def seed_initial_data(db: Session):
     except ImportError:
         from backend.auth import auth_handler
     try:
-        # 1. Admin mặc định
-        admin_user = db.query(UserModelDB).filter(UserModelDB.email == "admin@blanc.vn").first()
-        if not admin_user:
-            admin_user = UserModelDB(
-                username="admin",
-                email="admin@blanc.vn",
-                password_hash=auth_handler.get_password_hash("admin123"),
-                full_name="Quản Trị Viên Blanc",
-                phone="0987 654 321",
-                address="Showroom Blanc Luxury",
-                role="admin"
-            )
-            db.add(admin_user)
-            db.commit()
-            logger.info("Admin account seeded: admin@blanc.vn / admin123")
+        # 1. Admin mặc định (hỗ trợ cả admin@blanc.vn và admin@maisondecor.vn)
+        admin_emails = [
+            ("admin", "admin@blanc.vn", "Quản Trị Viên (Admin)"),
+            ("admin_maison", "admin@maisondecor.vn", "Quản Trị Viên Showroom")
+        ]
+        for uname, uemail, fname in admin_emails:
+            admin_user = db.query(UserModelDB).filter(
+                (UserModelDB.email == uemail) | (UserModelDB.username == uname)
+            ).first()
+            if not admin_user:
+                admin_user = UserModelDB(
+                    username=uname,
+                    email=uemail,
+                    password_hash=auth_handler.get_password_hash("admin123"),
+                    full_name=fname,
+                    phone="0987 654 321",
+                    address="Showroom Luxury Furniture",
+                    role="admin"
+                )
+                db.add(admin_user)
+        db.commit()
+        logger.info("Admin accounts verified/seeded: admin@blanc.vn & admin@maisondecor.vn (pass: admin123)")
 
         # 2. Danh mục mẫu (5 không gian phòng)
         if db.query(CategoryModelDB).count() == 0:
