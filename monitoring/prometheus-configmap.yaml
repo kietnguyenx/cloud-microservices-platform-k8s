@@ -54,12 +54,12 @@ data:
       - name: microservices-alert 
         rules:
           - alert: HighHttpErrorRate
-            expr: sum(rate(http_requests_total{status=~"5.*"}[1m])) / sum(rate(http_requests_total[1m])) * 100 > 5
-            for: 1m
+            expr: sum(rate(http_requests_total{status=~"5.*"}[1m])) / sum(rate(http_requests_total[1m])) * 100 > 3
+            for: 30s
             labels:
               severity: critical
             annotations:
-              summary: "Tỷ lệ lỗi HTTP 5xx vượt quá 5%"
+              summary: "Tỷ lệ lỗi HTTP 5xx vượt quá 3%"
               description: "Backend đang gặp sự cố với tỷ lệ lỗi server cao bất thường!"
       
           - alert: PodDown

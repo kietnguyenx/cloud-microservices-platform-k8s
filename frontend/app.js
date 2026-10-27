@@ -1470,6 +1470,29 @@ document.addEventListener("DOMContentLoaded", () => {
         btnRefreshOrders.addEventListener("click", () => fetchAdminOrders(true));
     }
 
+    const btnCleanupOrders = document.getElementById("btn-cleanup-test-orders");
+    if (btnCleanupOrders) {
+        btnCleanupOrders.addEventListener("click", async () => {
+            if (!confirm("Bạn có chắc chắn muốn xóa nhanh toàn bộ các đơn hàng ảo do Locust test tải sinh ra không?")) return;
+            try {
+                btnCleanupOrders.disabled = true;
+                btnCleanupOrders.innerHTML = `<span>Đang dọn dẹp...</span>`;
+                const res = await fetch(`${API_BASE}/orders/cleanup-test`, { method: "DELETE" });
+                const data = await res.json();
+                showToast(data.message || "Đã dọn dẹp sạch đơn test!", true);
+                await fetchAdminOrders(true);
+            } catch (err) {
+                showToast("Lỗi khi dọn dẹp đơn hàng: " + err.message, false);
+            } finally {
+                btnCleanupOrders.disabled = false;
+                btnCleanupOrders.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Xóa đơn test Locust
+                `;
+            }
+        });
+    }
+
     const filterTabs = document.querySelectorAll(".admin-filter-tab");
     filterTabs.forEach(tab => {
         tab.addEventListener("click", () => {

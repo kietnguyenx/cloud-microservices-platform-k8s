@@ -655,10 +655,16 @@
                             🛍️ Đơn mua cá nhân của tôi
                         </button>
                     </div>
-                    <button type="button" id="btn-refresh-admin-orders" class="btn-refresh-orders" title="Đồng bộ danh sách đơn mới nhất từ database">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                        Làm mới danh sách
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" id="btn-cleanup-test-orders" class="btn-refresh-orders" style="background: rgba(239, 68, 68, 0.08); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25);" title="Xóa toàn bộ các đơn hàng ảo do Locust test tải sinh ra">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Xóa đơn test Locust
+                        </button>
+                        <button type="button" id="btn-refresh-admin-orders" class="btn-refresh-orders" title="Đồng bộ danh sách đơn mới nhất từ database">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            Làm mới danh sách
+                        </button>
+                    </div>
                 </div>
                 <h3>Quản Lý & Duyệt Đơn Hàng Trực Tuyến</h3>
                 <p>Tiếp nhận đơn hàng, duyệt giao hàng và kích hoạt tiến trình xử lý nền (Worker Service qua Redis)</p>

@@ -31,7 +31,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15-alpine  
+          image: postgres:15-alpine
+          args: ["-c", "max_connections=300", "-c", "shared_buffers=128MB"]
           ports:
             - containerPort: 5432 #mở cổng 5432 của container
           env: #Tạo tài khoản và tên database mặc định lúc mới khởi chạy
