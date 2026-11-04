@@ -1744,81 +1744,715 @@ button {
 }
 
 /* ==========================================================================
-   12. RESPONSIVE DESIGN (TABLETS & MOBILE)
+   12. RESPONSIVE DESIGN (TABLETS & MOBILE SMARTPHONES)
+   Tối ưu hóa chuyên sâu hiển thị đều, đẹp và không tràn viền trên mọi kích thước điện thoại
    ========================================================================== */
+
+/* Tablet (iPad, Surface, Màn hình vừa <= 1024px) */
 @media (max-width: 1024px) {
-    .hero-container {
-        grid-template-columns: 1fr;
-        gap: 40px;
+    .hero-stationary-content {
+        padding: 40px 24px;
+        max-width: 640px;
     }
-    .hero-title {
-        font-size: 2.7rem;
+    .hero-main-title {
+        font-size: 2.8rem;
     }
     .products-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
     }
     .values-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-    .footer-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .announcement-bar {
-        display: none;
-    }
-    .header-inner {
-        height: 64px;
-    }
-    .main-nav {
-        display: none; /* Mobile menu can be toggled */
-    }
-    .search-box {
-        display: none;
-    }
-    .btn-text {
-        display: none;
-    }
-    .hero-title {
-        font-size: 2.1rem;
+        gap: 20px;
     }
     .room-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
     }
-    .consult-container {
-        flex-direction: column;
-        text-align: center;
+    .footer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
     }
     .product-modal-content {
         grid-template-columns: 1fr;
     }
     .modal-img-col img {
-        max-height: 280px;
-    }
-    .form-row {
-        grid-template-columns: 1fr;
+        max-height: 360px;
     }
 }
 
-@media (max-width: 480px) {
-    .products-grid {
-        grid-template-columns: 1fr;
+/* Smartphone & Mobile (Màn hình điện thoại <= 768px) */
+@media (max-width: 768px) {
+    /* Đệm khoảng trống đáy màn hình để không bị thanh Mobile Bottom Nav che khuất */
+    body {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+        font-size: 14px;
     }
+
+    .container {
+        padding: 0 16px;
+    }
+
+    /* Đảm bảo ô input trên iOS không bị tự động phóng to (zoom bug) */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
+    /* 1. Header trên điện thoại */
+    .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: rgba(247, 246, 242, 0.98);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+        height: 56px;
+        padding: 0 12px;
+        gap: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Bật nút Menu Drawer và nút Search Mobile */
+    .mobile-menu-btn,
+    .mobile-search-toggle-btn {
+        display: inline-flex !important;
+    }
+
+    /* Bật thanh Category cuộn ngang & Bottom Nav */
+    .mobile-category-bar {
+        display: block !important;
+    }
+
+    .mobile-bottom-nav {
+        display: flex !important;
+    }
+
+    /* Ẩn các thành phần thừa trên header desktop */
+    .main-nav,
+    .search-box,
+    .btn-text,
+    #btn-open-orders,
+    #btn-open-auth,
+    #btn-header-admin-orders,
+    #btn-admin-manage-orders {
+        display: none !important;
+    }
+
+    /* Logo thương hiệu căn giữa thanh lịch */
+    .brand-logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+        text-align: center;
+    }
+
+    .logo-mark {
+        font-size: 1.38rem;
+        letter-spacing: 1.2px;
+    }
+
+    .logo-sub {
+        font-size: 0.52rem;
+        letter-spacing: 2.8px;
+    }
+
+    /* Cụm tiện ích header bên phải (Search & Cart) */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        justify-content: center;
+        border-radius: var(--radius-full);
+        min-width: 36px;
+    }
+
+    #btn-open-cart {
+        margin-right: 6px; /* Giữ khoảng cách an toàn với mép phải điện thoại để không bị cắt badge */
+        position: relative;
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        font-size: 0.65rem;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 3px;
+    }
+
+    /* 2. Hero Section trên điện thoại */
+    .hero-slider-section {
+        height: 70vh !important;
+        min-height: 450px !important;
+        max-height: 540px !important;
+    }
+
+    .hero-stationary-content {
+        padding: 16px 16px 40px !important;
+        max-width: 100% !important;
+        text-align: left;
+    }
+
+    .hero-main-title {
+        font-size: clamp(1.4rem, 5vw, 1.7rem) !important;
+        line-height: 1.25 !important;
+        font-weight: 600 !important;
+        margin-bottom: 8px !important;
+        max-width: 320px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .hero-main-title em {
+        color: #ebd7c1;
+    }
+
+    .hero-main-desc {
+        font-size: 0.84rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 16px !important;
+        max-width: 300px;
+        color: rgba(245, 245, 242, 0.9) !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    .hero-main-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .hero-main-actions .btn-primary {
+        padding: 10px 22px !important;
+        font-size: 0.86rem !important;
+        border-radius: var(--radius-full) !important;
+        width: auto !important;
+        box-shadow: 0 4px 14px rgba(181, 140, 115, 0.4) !important;
+    }
+
+    /* Ẩn nút phụ trên điện thoại cho giao diện tối giản, thoáng đãng */
+    .hero-main-actions .btn-outline-light {
+        display: none !important;
+    }
+
+    /* Ẩn hoàn toàn 2 nút mũi tên tròn trên mobile để không che đè chữ và ảnh nội thất */
+    .slider-arrow {
+        display: none !important;
+    }
+
+    .slider-dots {
+        bottom: 12px !important;
+        padding: 4px 10px !important;
+        gap: 6px !important;
+        background-color: rgba(18, 20, 26, 0.5) !important;
+    }
+
+    .slider-dot {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    .slider-dot.active {
+        width: 18px !important;
+    }
+
+    /* 3. Giá trị cam kết (Values Bar) 2 cột đều đặn */
+    .values-bar {
+        padding: 18px 0 !important;
+        background-color: var(--bg-surface) !important;
+    }
+
     .values-grid {
-        grid-template-columns: 1fr;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
     }
+
+    .value-item {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+        background: var(--bg-main) !important;
+        padding: 10px !important;
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .value-icon {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        background: var(--bg-surface) !important;
+        color: var(--accent) !important;
+    }
+
+    .value-icon svg {
+        width: 17px !important;
+        height: 17px !important;
+    }
+
+    .value-item h4 {
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        color: var(--text-primary) !important;
+        margin-bottom: 2px !important;
+        line-height: 1.25 !important;
+    }
+
+    .value-item p {
+        font-size: 0.7rem !important;
+        line-height: 1.3 !important;
+        color: var(--text-secondary) !important;
+    }
+
+    /* 4. Khám phá không gian (Room Showcase) 2 cột vuông vắn */
+    .room-showcase {
+        padding: 36px 0 24px;
+    }
+
+    .section-header {
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 1.65rem;
+    }
+
+    .section-desc {
+        font-size: 0.85rem;
+    }
+
     .room-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
+
+    .room-card {
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+    }
+
+    .room-card-overlay {
+        padding: 12px 10px;
+    }
+
+    .room-card-overlay h3 {
+        font-size: 0.95rem;
+    }
+
+    .room-card-overlay span {
+        font-size: 0.7rem;
+    }
+
+    /* 5. Bộ lọc và Danh mục sản phẩm (Catalog Bar) */
+    .catalog-section {
+        padding: 24px 0 60px;
+    }
+
+    .catalog-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+    }
+
+    .catalog-main-title {
+        font-size: 1.55rem;
+    }
+
+    .catalog-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .select-filter-wrap {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 3px;
+    }
+
+    .select-filter-wrap label {
+        font-size: 0.72rem;
+    }
+
+    .control-select {
+        width: 100%;
+        height: 40px;
+        font-size: 0.82rem;
+        padding: 6px 10px;
+        border-radius: 8px;
+    }
+
+    .btn-admin-manage-orders,
+    .btn-admin-add-product {
+        grid-column: 1 / -1;
+        width: 100%;
+        justify-content: center;
+        height: 40px;
+    }
+
+    /* 6. Danh sách sản phẩm 2 cột đều và đẹp trên điện thoại */
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .product-card {
+        border-radius: 12px;
+        border-color: var(--border-color);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .product-thumb-wrap {
+        aspect-ratio: 1 / 1;
+    }
+
+    .product-thumb-actions {
+        display: none !important; /* Không dùng hover desktop trên màn cảm ứng */
+    }
+
+    .product-card-badge {
+        top: 6px;
+        left: 6px;
+        font-size: 0.62rem;
+        padding: 2px 7px;
+    }
+
+    .product-body {
+        padding: 10px 8px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-category-name {
+        font-size: 0.66rem;
+        margin-bottom: 3px;
+    }
+
+    .product-name {
+        font-size: 0.88rem;
+        line-height: 1.32;
+        min-height: 2.64em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 4px;
+    }
+
+    .product-specs {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+
+    .product-rating {
+        font-size: 0.72rem;
+        margin-bottom: 6px;
+        gap: 2px;
+    }
+
+    .product-stock-tag {
+        font-size: 0.64rem;
+        padding: 2px 6px;
+        margin-bottom: 6px;
+    }
+
+    .product-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 8px;
+    }
+
+    .product-price-box {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px;
+    }
+
+    .price-current {
+        font-size: 1.02rem;
+    }
+
+    .price-old {
+        font-size: 0.72rem;
+    }
+
+    .btn-add-cart {
+        width: 100%;
+        justify-content: center;
+        padding: 8px 6px;
+        font-size: 0.78rem;
+        border-radius: 6px;
+        height: 36px;
+    }
+
+    .product-admin-bar {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .btn-card-admin-edit,
+    .btn-card-admin-delete {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.72rem;
+        padding: 5px 4px;
+    }
+
+    /* 7. Banner tư vấn thiết kế */
+    .consult-banner {
+        padding: 36px 0;
+    }
+
+    .consult-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 18px;
+    }
+
+    .consult-text h2 {
+        font-size: 1.55rem;
+    }
+
+    .consult-text p {
+        font-size: 0.88rem;
+    }
+
+    .btn-consult {
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+        padding: 13px 20px;
+        font-size: 0.92rem;
+    }
+
+    /* 8. Chân trang Footer */
+    .site-footer {
+        padding-top: 40px;
+    }
+
     .footer-grid {
         grid-template-columns: 1fr;
+        gap: 28px;
+        padding-bottom: 30px;
     }
+
+    .newsletter-form {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .newsletter-form input,
+    .newsletter-form button {
+        width: 100%;
+        height: 42px;
+        font-size: 0.9rem;
+    }
+
     .footer-bottom-inner {
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         text-align: center;
+    }
+
+    /* 9. Tối ưu Modals & Drawers trên điện thoại */
+    .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+    }
+
+    .modal-dialog {
+        padding: 22px 16px;
+        border-radius: 20px 20px 0 0;
+        max-height: 90vh;
+        width: 100%;
+    }
+
+    .modal-close {
+        top: 12px;
+        right: 14px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+    }
+
+    .product-modal {
+        max-width: 100%;
+        padding: 0;
+        overflow-y: auto;
+    }
+
+    .product-modal-content {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-img-col img {
+        max-height: 240px;
+    }
+
+    .modal-info-col {
+        padding: 18px 16px;
+    }
+
+    .modal-info-col h3 {
+        font-size: 1.35rem;
+    }
+
+    .modal-actions-row {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .modal-actions-row button {
+        width: 100%;
+        height: 44px;
+    }
+
+    .checkout-modal {
+        max-width: 100%;
+        padding: 20px 16px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .orders-modal,
+    .admin-orders-modal {
+        width: 100%;
+        max-width: 100%;
+        padding: 18px 14px;
+        max-height: 90vh;
+    }
+
+    .admin-orders-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .admin-stat-box {
+        padding: 8px 10px;
+    }
+
+    .admin-stat-box .stat-value {
+        font-size: 1.15rem;
+    }
+
+    .admin-customer-info {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    .admin-order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .admin-order-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .admin-order-actions {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .admin-order-actions button {
+        flex: 1;
+        min-height: 38px;
+        justify-content: center;
+    }
+
+    .cart-drawer {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .cart-item-row {
+        gap: 10px;
+        padding-bottom: 12px;
+    }
+
+    .cart-item-img {
+        width: 62px;
+        height: 62px;
+    }
+
+    .drawer-header,
+    .drawer-body,
+    .drawer-footer {
+        padding: 16px 14px;
+    }
+}
+
+/* Màn hình điện thoại siêu nhỏ (iPhone SE, Galaxy Mini <= 360px) */
+@media (max-width: 360px) {
+    .container {
+        padding: 0 8px;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .values-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+    }
+
+    .room-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+    }
+
+    .catalog-controls {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+
+    .hero-main-title {
+        font-size: 1.35rem !important;
     }
 }
 
@@ -2414,5 +3048,380 @@ button {
     background-color: #f3f4f6 !important;
 }
 
+/* ==========================================================================
+   17. MOBILE NAVIGATION & BOTTOM BAR COMPONENT STYLES
+   ========================================================================== */
 
+/* Mobile Menu & Search Buttons in Header (Hidden by default on Desktop) */
+@media (min-width: 769px) {
+    .mobile-menu-btn,
+    .mobile-search-toggle-btn {
+        display: none !important;
+    }
+}
 
+.mobile-menu-btn,
+.mobile-search-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mobile-menu-btn:hover,
+.mobile-search-toggle-btn:hover {
+    background-color: #ffffff;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Mobile Search Dropdown */
+.mobile-search-dropdown {
+    width: 100%;
+    background-color: rgba(247, 246, 242, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 0 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    animation: slideDownMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownMobile {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-search-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-surface);
+    border: 1.5px solid var(--border-dark);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.mobile-search-inner:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(181, 140, 115, 0.18);
+}
+
+.mobile-search-inner svg {
+    color: var(--text-muted);
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.mobile-search-inner input {
+    width: 100%;
+    font-size: 16px !important;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+/* Mobile Quick Category Pill Bar */
+@media (min-width: 769px) {
+    .mobile-category-bar {
+        display: none !important;
+    }
+}
+
+.mobile-category-bar {
+    background-color: var(--bg-main);
+    padding: 10px 0 4px;
+    border-bottom: 1px solid rgba(232, 228, 220, 0.7);
+    position: sticky;
+    top: 60px;
+    z-index: 90;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.mobile-cat-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-cat-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-cat-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mobile-cat-pill:hover {
+    color: var(--text-primary);
+    border-color: var(--border-dark);
+}
+
+.mobile-cat-pill.active {
+    background-color: #232734;
+    color: #ffffff;
+    border-color: #232734;
+    box-shadow: 0 2px 8px rgba(35, 39, 52, 0.2);
+}
+
+/* Mobile Navigation Drawer */
+.mobile-drawer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 82%;
+    max-width: 320px;
+    height: 100%;
+    background-color: var(--bg-surface);
+    box-shadow: 10px 0 35px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1001;
+}
+
+.drawer-overlay.active .mobile-drawer {
+    transform: translateX(0);
+}
+
+.mobile-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-main);
+}
+
+.mobile-drawer-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mobile-user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background-color: var(--bg-accent-light);
+    border: 1px solid rgba(181, 140, 115, 0.25);
+    border-radius: var(--radius-md);
+}
+
+.mobile-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background-color: var(--accent);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mobile-user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mobile-user-info strong {
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mobile-user-info span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.mobile-drawer-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin: 4px 4px 2px;
+}
+
+.mobile-drawer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mobile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.mobile-nav-item .nav-icon {
+    font-size: 1.15rem;
+    width: 24px;
+    text-align: center;
+}
+
+.mobile-nav-item:hover {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+
+.mobile-nav-item.active {
+    background-color: var(--bg-subtle);
+    border-color: var(--border-color);
+    color: var(--accent-hover);
+    font-weight: 700;
+}
+
+.mobile-drawer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.mobile-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    background-color: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.mobile-link-btn:hover {
+    background-color: var(--bg-main);
+    color: var(--accent);
+}
+
+.mobile-link-btn svg {
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+/* Mobile Bottom Navigation Bar */
+@media (min-width: 769px) {
+    .mobile-bottom-nav {
+        display: none !important;
+    }
+}
+
+.mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 950;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.05);
+    align-items: center;
+    justify-content: space-around;
+}
+
+.bnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+    color: #6b7280;
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.bnav-item svg {
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bnav-item:hover,
+.bnav-item.active {
+    color: var(--accent);
+}
+
+.bnav-item.active svg {
+    transform: translateY(-2px);
+    stroke: var(--accent);
+}
+
+.bnav-cart-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bnav-badge {
+    position: absolute;
+    top: -7px;
+    right: -10px;
+    font-size: 0.62rem;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+}

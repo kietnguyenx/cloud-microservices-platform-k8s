@@ -5,7 +5,7 @@
  */
 
 // Cấu hình URL kết nối Backend API (hỗ trợ cả Live Server, Docker và K8s)
-const API_BASE = (window.location.port === "3000" || window.location.port === "5500" || window.location.protocol === "file:") 
+const API_BASE = (window.location.protocol === "file:" || ["3000", "5000", "5173", "5500", "5501", "8081"].includes(window.location.port)) 
     ? "http://localhost:8000" 
     : "";
 
@@ -642,10 +642,14 @@ function renderProducts() {
     if (btnAdminOrders) {
         btnAdminOrders.style.display = isAdmin ? "inline-flex" : "none";
     }
+    const btnHeaderAdminOrders = document.getElementById("btn-header-admin-orders");
+    if (btnHeaderAdminOrders) {
+        btnHeaderAdminOrders.style.display = isAdmin ? "inline-flex" : "none";
+    }
 
     grid.innerHTML = filtered.map(item => `
         <article class="product-card" data-id="${item.id}">
-            <div class="product-thumb-wrap">
+            <div class="product-thumb-wrap" onclick="openProductModal(${item.id})" style="cursor: pointer;">
                 ${item.badge ? `<span class="product-card-badge badge-${item.badgeType}">${item.badge}</span>` : ''}
                 <img src="${item.image}" alt="${item.name}" class="product-thumb" loading="lazy">
                 <div class="product-thumb-actions">
@@ -704,7 +708,9 @@ function saveCart() {
 function updateCartBadge() {
     const badge = document.getElementById("cart-badge");
     const totalCount = AppState.cart.reduce((sum, item) => sum + item.quantity, 0);
-    badge.textContent = totalCount;
+    if (badge) badge.textContent = totalCount;
+    const bnavBadge = document.getElementById("bnav-cart-badge");
+    if (bnavBadge) bnavBadge.textContent = totalCount;
 }
 
 function addToCart(productId, quantity = 1) {
@@ -1167,34 +1173,64 @@ function closeAuthModal() {
 function updateAuthDisplay() {
     const label = document.getElementById("auth-label");
     const btnAdminOrders = document.getElementById("btn-admin-manage-orders");
+    const btnHeaderAdminOrders = document.getElementById("btn-header-admin-orders");
     const ordersBtnText = document.getElementById("orders-btn-text");
+    const mobileUserName = document.getElementById("mobile-user-name");
+    const mobileUserRole = document.getElementById("mobile-user-role");
+    const mobileAuthBtnText = document.getElementById("mobile-auth-btn-text");
+    const mobileBtnAdminOrders = document.getElementById("mobile-btn-admin-orders");
     const isAdmin = AppState.user && AppState.user.role === "admin";
 
     // "Đơn mua" luôn giữ nguyên tên cho tất cả người dùng để cả khách và admin đều có thể xem lịch sử mua cá nhân
     if (ordersBtnText) ordersBtnText.textContent = "Đơn mua";
 
     if (AppState.user) {
+        const displayName = AppState.user.full_name || AppState.user.username;
+        if (mobileUserName) mobileUserName.textContent = displayName;
+        if (mobileAuthBtnText) mobileAuthBtnText.textContent = `Đăng xuất (${displayName})`;
+
         if (isAdmin) {
-            label.textContent = "Admin";
-            label.style.color = "#8c6d58";
-            label.style.fontWeight = "700";
+            if (label) {
+                label.textContent = "Admin";
+                label.style.color = "#8c6d58";
+                label.style.fontWeight = "700";
+            }
+            if (mobileUserRole) mobileUserRole.textContent = "Quản Trị Viên Showroom";
             if (btnAdminOrders) btnAdminOrders.style.display = "inline-flex";
+            if (btnHeaderAdminOrders) btnHeaderAdminOrders.style.display = "inline-flex";
+            if (mobileBtnAdminOrders) mobileBtnAdminOrders.style.display = "flex";
             refreshAdminPendingBadge();
         } else {
-            label.textContent = AppState.user.username;
-            label.style.color = "";
-            label.style.fontWeight = "";
+            if (label) {
+                label.textContent = AppState.user.username;
+                label.style.color = "";
+                label.style.fontWeight = "";
+            }
+            if (mobileUserRole) mobileUserRole.textContent = "Thành viên thân thiết";
             if (btnAdminOrders) btnAdminOrders.style.display = "none";
+            if (btnHeaderAdminOrders) btnHeaderAdminOrders.style.display = "none";
+            if (mobileBtnAdminOrders) mobileBtnAdminOrders.style.display = "none";
             const hBadge = document.getElementById("header-pending-badge");
             if (hBadge) hBadge.style.display = "none";
+            const mhBadge = document.getElementById("mobile-header-pending-badge");
+            if (mhBadge) mhBadge.style.display = "none";
         }
     } else {
-        label.textContent = "Tài khoản";
-        label.style.color = "";
-        label.style.fontWeight = "";
+        if (label) {
+            label.textContent = "Tài khoản";
+            label.style.color = "";
+            label.style.fontWeight = "";
+        }
+        if (mobileUserName) mobileUserName.textContent = "Khách hàng Maison";
+        if (mobileUserRole) mobileUserRole.textContent = "Đăng nhập để nhận ưu đãi";
+        if (mobileAuthBtnText) mobileAuthBtnText.textContent = "Đăng nhập / Đăng ký";
         if (btnAdminOrders) btnAdminOrders.style.display = "none";
+        if (btnHeaderAdminOrders) btnHeaderAdminOrders.style.display = "none";
+        if (mobileBtnAdminOrders) mobileBtnAdminOrders.style.display = "none";
         const hBadge = document.getElementById("header-pending-badge");
         if (hBadge) hBadge.style.display = "none";
+        const mhBadge = document.getElementById("mobile-header-pending-badge");
+        if (mhBadge) mhBadge.style.display = "none";
     }
 }
 
@@ -1291,15 +1327,44 @@ function initHeroSlider() {
     if (sliderSection) {
         sliderSection.addEventListener("mouseenter", stopAutoSlide);
         sliderSection.addEventListener("mouseleave", startAutoSlide);
+
+        // Hỗ trợ vuốt chạm cảm ứng (Touch Swipe) mượt mà trên điện thoại
+        let touchStartX = 0;
+        let touchEndX = 0;
+        sliderSection.addEventListener("touchstart", (e) => {
+            if (e.changedTouches && e.changedTouches[0]) {
+                touchStartX = e.changedTouches[0].screenX;
+            }
+        }, { passive: true });
+
+        sliderSection.addEventListener("touchend", (e) => {
+            if (e.changedTouches && e.changedTouches[0]) {
+                touchEndX = e.changedTouches[0].screenX;
+                const delta = touchEndX - touchStartX;
+                if (Math.abs(delta) > 40) {
+                    if (delta < 0) {
+                        goToSlide(currentHeroSlide + 1); // Vuốt sang trái -> Ảnh tiếp theo
+                    } else {
+                        goToSlide(currentHeroSlide - 1); // Vuốt sang phải -> Ảnh trước đó
+                    }
+                    startAutoSlide();
+                }
+            }
+        }, { passive: true });
     }
 
     startAutoSlide();
 }
 
 function filterByRoom(category) {
-    const navItems = document.querySelectorAll(".nav-item");
     AppState.currentCategory = category;
-    navItems.forEach(b => {
+    document.querySelectorAll(".nav-item").forEach(b => {
+        b.classList.toggle("active", b.dataset.category === category);
+    });
+    document.querySelectorAll(".mobile-cat-pill").forEach(b => {
+        b.classList.toggle("active", b.dataset.category === category);
+    });
+    document.querySelectorAll(".mobile-nav-item").forEach(b => {
         b.classList.toggle("active", b.dataset.category === category);
     });
     renderProducts();
@@ -1319,14 +1384,43 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAuthDisplay();
     renderProducts();
 
-    // 2. Lọc danh mục phòng trên Navigation bar
+    // 2. Lọc danh mục phòng (Đồng bộ cả Desktop, Thanh cuộn Pill điện thoại và Menu Drawer)
+    function applyCategorySelection(cat) {
+        AppState.currentCategory = cat;
+        document.querySelectorAll(".nav-item").forEach(b => {
+            b.classList.toggle("active", b.dataset.category === cat);
+        });
+        document.querySelectorAll(".mobile-cat-pill").forEach(b => {
+            b.classList.toggle("active", b.dataset.category === cat);
+        });
+        document.querySelectorAll(".mobile-nav-item").forEach(b => {
+            b.classList.toggle("active", b.dataset.category === cat);
+        });
+        renderProducts();
+    }
+
     const navItems = document.querySelectorAll(".nav-item");
     navItems.forEach(btn => {
         btn.addEventListener("click", () => {
-            navItems.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            AppState.currentCategory = btn.dataset.category;
-            renderProducts();
+            applyCategorySelection(btn.dataset.category);
+            document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+        });
+    });
+
+    const mobileCatPills = document.querySelectorAll(".mobile-cat-pill");
+    mobileCatPills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            applyCategorySelection(pill.dataset.category);
+            pill.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+            document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+        });
+    });
+
+    const mobileNavItems = document.querySelectorAll(".mobile-nav-item");
+    mobileNavItems.forEach(item => {
+        item.addEventListener("click", () => {
+            applyCategorySelection(item.dataset.category);
+            closeMobileDrawer();
             document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
         });
     });
@@ -1336,31 +1430,155 @@ document.addEventListener("DOMContentLoaded", () => {
     roomCards.forEach(card => {
         card.addEventListener("click", () => {
             const cat = card.dataset.category;
-            AppState.currentCategory = cat;
-            navItems.forEach(b => {
-                b.classList.toggle("active", b.dataset.category === cat);
-            });
-            renderProducts();
+            applyCategorySelection(cat);
             document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
         });
     });
 
-    // 4. Tìm kiếm từ khóa
+    // 4. Tìm kiếm từ khóa (Đồng bộ cả Desktop Search và Mobile Search Dropdown)
     const searchInput = document.getElementById("input-search");
     const clearSearchBtn = document.getElementById("btn-clear-search");
+    const mobileSearchInput = document.getElementById("mobile-input-search");
+    const clearMobileSearchBtn = document.getElementById("btn-clear-mobile-search");
+    const mobileSearchDropdown = document.getElementById("mobile-search-dropdown");
+    const btnToggleMobileSearch = document.getElementById("btn-toggle-mobile-search");
 
-    searchInput.addEventListener("input", (e) => {
-        AppState.searchQuery = e.target.value;
-        clearSearchBtn.style.display = e.target.value ? "block" : "none";
+    function syncSearchQuery(query) {
+        AppState.searchQuery = query;
+        if (searchInput && searchInput.value !== query) searchInput.value = query;
+        if (mobileSearchInput && mobileSearchInput.value !== query) mobileSearchInput.value = query;
+        if (clearSearchBtn) clearSearchBtn.style.display = query ? "block" : "none";
+        if (clearMobileSearchBtn) clearMobileSearchBtn.style.display = query ? "block" : "none";
         renderProducts();
-    });
+    }
 
-    clearSearchBtn.addEventListener("click", () => {
-        searchInput.value = "";
-        AppState.searchQuery = "";
-        clearSearchBtn.style.display = "none";
-        renderProducts();
-    });
+    if (searchInput) {
+        searchInput.addEventListener("input", (e) => syncSearchQuery(e.target.value));
+    }
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener("click", () => syncSearchQuery(""));
+    }
+
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener("input", (e) => syncSearchQuery(e.target.value));
+    }
+    if (clearMobileSearchBtn) {
+        clearMobileSearchBtn.addEventListener("click", () => syncSearchQuery(""));
+    }
+
+    function toggleMobileSearch(forceOpen = null) {
+        if (!mobileSearchDropdown) return;
+        const isHidden = (mobileSearchDropdown.style.display === "none" || !mobileSearchDropdown.style.display);
+        const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
+        mobileSearchDropdown.style.display = shouldOpen ? "block" : "none";
+        if (shouldOpen && mobileSearchInput) {
+            mobileSearchInput.focus();
+        }
+    }
+
+    if (btnToggleMobileSearch) {
+        btnToggleMobileSearch.addEventListener("click", () => toggleMobileSearch());
+    }
+
+    // 4.1 Mobile Navigation Drawer
+    const mobileMenuOverlay = document.getElementById("mobile-menu-overlay");
+    const btnMobileMenu = document.getElementById("btn-mobile-menu");
+    const btnCloseMobileMenu = document.getElementById("btn-close-mobile-menu");
+
+    function openMobileDrawer() {
+        if (mobileMenuOverlay) {
+            mobileMenuOverlay.classList.add("active");
+            document.body.style.overflow = "hidden";
+        }
+    }
+
+    function closeMobileDrawer() {
+        if (mobileMenuOverlay) {
+            mobileMenuOverlay.classList.remove("active");
+            document.body.style.overflow = "";
+        }
+    }
+
+    if (btnMobileMenu) btnMobileMenu.addEventListener("click", openMobileDrawer);
+    if (btnCloseMobileMenu) btnCloseMobileMenu.addEventListener("click", closeMobileDrawer);
+    if (mobileMenuOverlay) {
+        mobileMenuOverlay.addEventListener("click", (e) => {
+            if (e.target.id === "mobile-menu-overlay") closeMobileDrawer();
+        });
+    }
+
+    const mobileBtnOrders = document.getElementById("mobile-btn-orders");
+    if (mobileBtnOrders) {
+        mobileBtnOrders.addEventListener("click", () => {
+            closeMobileDrawer();
+            openOrderHistory();
+        });
+    }
+
+    const mobileBtnAdminOrders = document.getElementById("mobile-btn-admin-orders");
+    if (mobileBtnAdminOrders) {
+        mobileBtnAdminOrders.addEventListener("click", () => {
+            closeMobileDrawer();
+            openAdminOrdersModal();
+        });
+    }
+
+    const mobileBtnAuth = document.getElementById("mobile-btn-auth");
+    if (mobileBtnAuth) {
+        mobileBtnAuth.addEventListener("click", () => {
+            closeMobileDrawer();
+            openAuthModal();
+        });
+    }
+
+    // 4.2 Mobile Bottom Navigation Bar
+    const bnavHome = document.getElementById("bnav-home");
+    const bnavCatalog = document.getElementById("bnav-catalog");
+    const bnavSearch = document.getElementById("bnav-search");
+    const bnavOrders = document.getElementById("bnav-orders");
+    const bnavCart = document.getElementById("bnav-cart");
+
+    function setActiveBnav(activeId) {
+        document.querySelectorAll(".bnav-item").forEach(item => {
+            item.classList.toggle("active", item.id === activeId);
+        });
+    }
+
+    if (bnavHome) {
+        bnavHome.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setActiveBnav("bnav-home");
+        });
+    }
+
+    if (bnavCatalog) {
+        bnavCatalog.addEventListener("click", () => {
+            document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+            setActiveBnav("bnav-catalog");
+        });
+    }
+
+    if (bnavSearch) {
+        bnavSearch.addEventListener("click", () => {
+            toggleMobileSearch(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setActiveBnav("bnav-search");
+        });
+    }
+
+    if (bnavOrders) {
+        bnavOrders.addEventListener("click", () => {
+            openOrderHistory();
+            setActiveBnav("bnav-orders");
+        });
+    }
+
+    if (bnavCart) {
+        bnavCart.addEventListener("click", () => {
+            openCart();
+        });
+    }
 
     // 5. Lọc mức giá & Sắp xếp
     document.getElementById("filter-price").addEventListener("change", (e) => {
@@ -1375,12 +1593,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 6. Reset Filters
     const resetFn = () => {
-        AppState.currentCategory = "all";
+        applyCategorySelection("all");
         AppState.priceFilter = "all";
-        AppState.searchQuery = "";
-        searchInput.value = "";
+        syncSearchQuery("");
         document.getElementById("filter-price").value = "all";
-        navItems.forEach(b => b.classList.toggle("active", b.dataset.category === "all"));
         renderProducts();
     };
 
@@ -1454,6 +1670,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // 11.1 Admin Orders Management Listeners
     const btnAdminOrders = document.getElementById("btn-admin-manage-orders");
     if (btnAdminOrders) btnAdminOrders.addEventListener("click", openAdminOrdersModal);
+
+    const btnHeaderAdminOrders = document.getElementById("btn-header-admin-orders");
+    if (btnHeaderAdminOrders) btnHeaderAdminOrders.addEventListener("click", openAdminOrdersModal);
 
     const btnCloseAdminOrders = document.getElementById("btn-close-admin-orders");
     if (btnCloseAdminOrders) btnCloseAdminOrders.addEventListener("click", closeAdminOrdersModal);
@@ -2100,6 +2319,12 @@ function refreshAdminPendingBadge() {
     if (headerBadge) {
         headerBadge.textContent = pendingCount;
         headerBadge.style.display = pendingCount > 0 ? "inline-block" : "none";
+    }
+
+    const mobileHeaderBadge = document.getElementById("mobile-header-pending-badge");
+    if (mobileHeaderBadge) {
+        mobileHeaderBadge.textContent = pendingCount;
+        mobileHeaderBadge.style.display = pendingCount > 0 ? "inline-block" : "none";
     }
 }
 

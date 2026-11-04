@@ -17,6 +17,34 @@ from prometheus_fastapi_instrumentator import Instrumentator
 logger = logging.getLogger("uvicorn.error")
 
 
+try:
+    from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
+    from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
+    from schemas import (
+        CategoryResponseModel,
+        ProductCreateSchema,
+        ProductUpdateSchema,
+        ProductResponseModel,
+        OrderCreateSchema,
+        OrderResponseModel,
+        OrderStatusUpdateSchema
+    )
+    from auth import auth_router, verify_admin
+except ImportError:
+    from backend.database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
+    from backend.models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
+    from backend.schemas import (
+        CategoryResponseModel,
+        ProductCreateSchema,
+        ProductUpdateSchema,
+        ProductResponseModel,
+        OrderCreateSchema,
+        OrderResponseModel,
+        OrderStatusUpdateSchema
+    )
+    from backend.auth import auth_router, verify_admin
+
+
 def publish_order_task(order_code: str, customer_name: str, total_amount: float):
     """Đẩy tác vụ xử lý đơn hàng vào Redis queue để Worker service xử lý ngầm."""
     try:
@@ -52,34 +80,6 @@ def publish_order_status_task(order_id: int, new_status: str):
         logger.info(f"Đã gửi tác vụ cập nhật đơn #{order_id} sang '{new_status}' vào Redis queue.")
     except Exception as e:
         logger.debug(f"Bỏ qua gửi Redis task: {e}")
-
-
-try:
-    from database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
-    from models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
-    from schemas import (
-        CategoryResponseModel,
-        ProductCreateSchema,
-        ProductUpdateSchema,
-        ProductResponseModel,
-        OrderCreateSchema,
-        OrderResponseModel,
-        OrderStatusUpdateSchema
-    )
-    from auth import auth_router, verify_admin
-except ImportError:
-    from backend.database import settings, engine, SessionLocal, get_db, init_db, seed_initial_data
-    from backend.models import ProductModelDB, CategoryModelDB, OrderModelDB, OrderItemModelDB
-    from backend.schemas import (
-        CategoryResponseModel,
-        ProductCreateSchema,
-        ProductUpdateSchema,
-        ProductResponseModel,
-        OrderCreateSchema,
-        OrderResponseModel,
-        OrderStatusUpdateSchema
-    )
-    from backend.auth import auth_router, verify_admin
 
 
 def create_slug(text: str) -> str:

@@ -1,26 +1,45 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 *.class
+*.so
 
 # Environment variables & local secrets
 .env
 backend/.env
 *.env
+.env.*
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
 
 # Local Databases
 *.db
 *.sqlite3
+
+# Logs
+*.log
 
 # Pytest & Testing Cache
 .pytest_cache/
 .coverage
 htmlcov/
 
+# IDE & Editor files
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
 # Temporary & Lock files (MS Office / Editors)
 ~$*
 ~$*.docx
 *.tmp
 *.bak
-*.swp
-*.swo
