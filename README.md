@@ -15,46 +15,7 @@
 
 Dự án triển khai một nền tảng thương mại điện tử nội thất cao cấp (**MAISON' DÉCOR**) theo các chuẩn mực thiết kế **Hạ tầng Cloud-Native (Cloud-Native Infrastructure)**. Hệ thống được module hóa cao độ thành các microservices độc lập, kết hợp giữa các tầng dịch vụ phi trạng thái (**Stateless Tier**), hàng đợi xử lý ngầm bất đồng bộ (**Asynchronous Event Broker**) và cơ sở dữ liệu bền vững (**StatefulSet with Persistent Volume Claim**).
 
-### Mô Hình Topology Hệ Thống (System Topology)
 
-```mermaid
-flowchart TB
-    Client([Trình duyệt Người dùng / Locust Load Generator]) --> Ingress[Ingress Controller / Nginx Reverse Proxy]
-
-    subgraph Cluster [Kubernetes Orchestration Cluster (k3d)]
-        Ingress -->|Route / | FE[Frontend Service NodePort: 30080]
-        Ingress -->|Route /api, /products, /docs| BE[Backend Service ClusterIP: 8000]
-
-        subgraph Stateless_Tier [Stateless Application Tier]
-            FE --> FEPods[Nginx SPA Pods: Alpine Light]
-            BE --> BEPods[FastAPI ASGI Pods: Python 3.10+]
-        end
-
-        subgraph Event_Driven [Asynchronous Messaging & Decoupling]
-            BEPods -->|Push Task Queue| Redis[(Redis 7 Broker ClusterIP: 6379)]
-            WorkerPods[Worker Consumer Pods] -->|BPOP Task Payload| Redis
-        end
-
-        subgraph Stateful_Storage [Stateful Data Persistence]
-            BEPods -->|Read/Write Pool| Postgres[(PostgreSQL 15 StatefulSet: 5432)]
-            WorkerPods -->|Update State| Postgres
-            Postgres --- PVC[(PersistentVolumeClaim 1Gi: local-path)]
-        end
-
-        subgraph Elasticity_Controller [Horizontal Auto-Scaling Engine]
-            MetricsServer[Metrics Server API: cadvisor] -->|CPU/Memory Polling| BEPods
-            HPA[Horizontal Pod Autoscaler HPA v2] -->|Scale 2 -> 10 Pods when CPU > 70%| BEPods
-        end
-
-        subgraph SRE_Telemetry [Full-Stack Observability]
-            Prometheus[Prometheus Server: 9090] -->|Scrape /metrics every 15s| BEPods
-            Prometheus -->|Evaluate Alert Rules| Alertmanager[Alertmanager Hub: 9093]
-            Grafana[Grafana Dashboard: 32000] -->|PromQL Telemetry Queries| Prometheus
-        end
-    end
-```
-
----
 
 ## 🎯 Bảng Thông Số Kỹ Thuật (System Specifications & Resource Allocations)
 
